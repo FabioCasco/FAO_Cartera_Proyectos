@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -32,7 +33,9 @@ function readableAuthError(error) {
 
 export function AuthProvider({ children }) {
   const supabase = getSupabase();
+  const authorizedRef = useRef(false);
   const [session, setSession] = useState(null);
+  const [authorized, setAuthorized] = useState(false);
   const [initializing, setInitializing] = useState(Boolean(supabase));
   const [connection, setConnection] = useState(
     hasSupabaseConfig() ? "checking" : "config-missing",
@@ -40,9 +43,17 @@ export function AuthProvider({ children }) {
   const [connectionMessage, setConnectionMessage] = useState("");
   const [authError, setAuthError] = useState("");
 
+  const setAuthorization = useCallback((value) => {
+    authorizedRef.current = value;
+    setAuthorized(value);
+  }, []);
+
   const probeConnection = useCallback(
-    async (candidateSession = null) => {
+    async (candidateSession = null, options = {}) => {
+      const silent = Boolean(options.silent && authorizedRef.current);
+
       if (!supabase) {
+        setAuthorization(false);
         setConnection("config-missing");
         setConnectionMessage(
           "La URL o la clave publicable de Supabase no están configuradas.",
@@ -57,19 +68,31 @@ export function AuthProvider({ children }) {
       }
 
       if (!activeSession) {
+        setAuthorization(false);
         setConnection("auth-required");
         setConnectionMessage("Inicie sesión para acceder a la cartera.");
         return false;
       }
 
-      setConnection("checking");
-      setConnectionMessage("Validando acceso a FAO-HN-GeoHub…");
+      if (!silent) {
+        setConnection("checking");
+        setConnectionMessage("Validando acceso a FAO-HN-GeoHub…");
+      }
 
       const { count, error } = await supabase
         .from("portfolio_projects")
         .select("id,deleted_at", { count: "exact", head: true });
 
       if (error) {
+        if (silent && authorizedRef.current) {
+          setConnection("degraded");
+          setConnectionMessage(
+            `La sesión sigue activa, pero la comprobación en segundo plano no respondió: ${error.message}`,
+          );
+          return false;
+        }
+
+        setAuthorization(false);
         setConnection("error");
         setConnectionMessage(
           `Supabase respondió, pero la migración operativa o los permisos no están listos: ${error.message}`,
@@ -77,13 +100,14 @@ export function AuthProvider({ children }) {
         return false;
       }
 
+      setAuthorization(true);
       setConnection("connected");
       setConnectionMessage(
         `${count ?? 0} proyectos disponibles · sesión protegida`,
       );
       return true;
     },
-    [supabase],
+    [setAuthorization, supabase],
   );
 
   useEffect(() => {
@@ -94,16 +118,18 @@ export function AuthProvider({ children }) {
 
     supabase.auth.getSession().then(({ data, error }) => {
       if (!mounted) return;
-      if (error) {
-        setAuthError(readableAuthError(error));
-      }
-      setSession(data.session ?? null);
+      if (error) setAuthError(readableAuthError(error));
+
+      const recoveredSession = data.session ?? null;
+      setSession(recoveredSession);
       setInitializing(false);
-      if (data.session) {
+
+      if (recoveredSession) {
         window.setTimeout(() => {
-          void probeConnection(data.session);
+          void probeConnection(recoveredSession, { silent: false });
         }, 0);
       } else {
+        setAuthorization(false);
         setConnection("auth-required");
         setConnectionMessage("Inicie sesión para acceder a la cartera.");
       }
@@ -113,14 +139,17 @@ export function AuthProvider({ children }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (!mounted) return;
+
       setSession(nextSession);
       setAuthError("");
+
       if (nextSession) {
-        setConnection("checking");
+        const silent = authorizedRef.current;
         window.setTimeout(() => {
-          void probeConnection(nextSession);
+          void probeConnection(nextSession, { silent });
         }, 0);
       } else {
+        setAuthorization(false);
         setConnection("auth-required");
         setConnectionMessage("Inicie sesión para acceder a la cartera.");
       }
@@ -130,16 +159,16 @@ export function AuthProvider({ children }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [probeConnection, supabase]);
+  }, [probeConnection, setAuthorization, supabase]);
 
   const signIn = useCallback(
     async ({ email, password }) => {
-      if (!supabase) {
-        throw new Error("Supabase no está configurado.");
-      }
+      if (!supabase) throw new Error("Supabase no está configurado.");
 
       setAuthError("");
+      setAuthorization(false);
       setConnection("checking");
+      setConnectionMessage("Validando credenciales…");
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
@@ -154,34 +183,38 @@ export function AuthProvider({ children }) {
       }
 
       setSession(data.session ?? null);
-      await probeConnection(data.session ?? null);
+      await probeConnection(data.session ?? null, { silent: false });
       return data;
     },
-    [probeConnection, supabase],
+    [probeConnection, setAuthorization, supabase],
   );
 
   const signOut = useCallback(async () => {
     if (!supabase) return;
     const { error } = await supabase.auth.signOut({ scope: "local" });
     if (error) throw error;
+    setAuthorization(false);
     setSession(null);
     setConnection("auth-required");
-  }, [supabase]);
+    setConnectionMessage("Inicie sesión para acceder a la cartera.");
+  }, [setAuthorization, supabase]);
 
   const value = useMemo(
     () => ({
       session,
       user: session?.user ?? null,
+      authorized,
       initializing,
       connection,
       connectionMessage,
       authError,
       signIn,
       signOut,
-      retryConnection: () => probeConnection(session),
+      retryConnection: () => probeConnection(session, { silent: false }),
     }),
     [
       authError,
+      authorized,
       connection,
       connectionMessage,
       initializing,
@@ -349,6 +382,7 @@ function LoginScreen() {
 export function OperationalGate({ children }) {
   const {
     session,
+    authorized,
     initializing,
     connection,
     connectionMessage,
@@ -376,7 +410,7 @@ export function OperationalGate({ children }) {
 
   if (!session) return <LoginScreen />;
 
-  if (connection === "checking") {
+  if (!authorized && connection === "checking") {
     return (
       <AccessScreen
         message={connectionMessage || "Validando permisos…"}
@@ -385,7 +419,7 @@ export function OperationalGate({ children }) {
     );
   }
 
-  if (connection === "error") {
+  if (!authorized && connection === "error") {
     return (
       <AccessScreen
         message={connectionMessage}
