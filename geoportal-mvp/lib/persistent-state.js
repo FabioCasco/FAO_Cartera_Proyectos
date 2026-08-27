@@ -3,13 +3,12 @@
 import {
   useCallback,
   useEffect,
-  useRef,
+  useState,
   useSyncExternalStore,
 } from "react";
 
 const valueCache = new Map();
 const listenersByKey = new Map();
-const EMPTY = Symbol("persistent-state-empty");
 
 function getListeners(key) {
   if (!listenersByKey.has(key)) listenersByKey.set(key, new Set());
@@ -63,11 +62,9 @@ function clearStoredValue(key) {
  * hydration mismatch in the statically exported Next.js application.
  */
 export function usePersistentState(key, initialValue) {
-  const initialRef = useRef(EMPTY);
-  if (initialRef.current === EMPTY) {
-    initialRef.current =
-      typeof initialValue === "function" ? initialValue() : initialValue;
-  }
+  const [initial] = useState(() =>
+    typeof initialValue === "function" ? initialValue() : initialValue,
+  );
 
   const subscribe = useCallback(
     (listener) => {
@@ -90,21 +87,21 @@ export function usePersistentState(key, initialValue) {
   );
 
   const getSnapshot = useCallback(
-    () => readStoredValue(key, initialRef.current),
-    [key],
+    () => readStoredValue(key, initial),
+    [initial, key],
   );
-  const getServerSnapshot = useCallback(() => initialRef.current, []);
+  const getServerSnapshot = useCallback(() => initial, [initial]);
 
   const value = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const setValue = useCallback(
     (nextValue) => {
-      const current = readStoredValue(key, initialRef.current);
+      const current = readStoredValue(key, initial);
       const resolved =
         typeof nextValue === "function" ? nextValue(current) : nextValue;
       writeStoredValue(key, resolved);
     },
-    [key],
+    [initial, key],
   );
 
   const clearValue = useCallback(() => clearStoredValue(key), [key]);
