@@ -247,6 +247,16 @@ export async function createProjectBundle(payload) {
   return data;
 }
 
+export async function updateProjectCore(projectId, payload) {
+  const { supabase } = await requireSession();
+  const { error } = await supabase.rpc("portfolio_update_project_core", {
+    target_project_id: projectId,
+    payload,
+  });
+  if (error) throw error;
+  return true;
+}
+
 export async function uploadProjectAssets(projectId, files) {
   if (!files?.length) return [];
   const { supabase, session } = await requireSession();
