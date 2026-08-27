@@ -28,37 +28,45 @@ jobs:
         run: |
           python <<'PY'
           from pathlib import Path
+          import re
 
           path = Path("geoportal-mvp/components/geoportal-map.jsx")
           text = path.read_text()
 
-          def replace_once(old, new, label):
-              global text
-              if old not in text:
+          def require(condition, label):
+              if not condition:
                   raise SystemExit(f"Pattern not found: {label}")
-              text = text.replace(old, new, 1)
 
           text = text.replace("  ChevronDown,\n", "", 1)
 
-          replace_once(
-              'import { money, percent, statusLabel } from "@/lib/format";\n',
-              'import { money, percent, statusLabel } from "@/lib/format";\nimport { usePersistentState } from "@/lib/persistent-state";\n',
-              "persistent state import",
-          )
+          format_import = 'import { money, percent, statusLabel } from "@/lib/format";\n'
+          persistent_import = 'import { usePersistentState } from "@/lib/persistent-state";\n'
+          require(format_import in text, "format import")
+          if persistent_import not in text:
+              text = text.replace(format_import, format_import + persistent_import, 1)
 
-          replace_once(
-              '  const baseLayersRef = useRef(null);\n  const overlayLayersRef = useRef({});',
-              '  const baseLayersRef = useRef(null);\n  const activeBaseLayerRef = useRef(null);\n  const overlayLayersRef = useRef({});',
-              "active basemap ref",
+          refs_old = (
+              "  const baseLayersRef = useRef(null);\n"
+              "  const overlayLayersRef = useRef({});"
           )
+          refs_new = (
+              "  const baseLayersRef = useRef(null);\n"
+              "  const activeBaseLayerRef = useRef(null);\n"
+              "  const overlayLayersRef = useRef({});"
+          )
+          require(refs_old in text or refs_new in text, "basemap refs")
+          if refs_new not in text:
+              text = text.replace(refs_old, refs_new, 1)
 
-          old_state = '''  const [area, setArea] = useState("all");
-          const [project, setProject] = useState("all");
-          const [query, setQuery] = useState("");
-          const [analysisMode, setAnalysisMode] = useState("municipalities");
-          const [summaryTab, setSummaryTab] = useState("areas");
-          const [selected, setSelected] = useState(null);'''
-          new_state = '''  const [area, setArea] = usePersistentState(
+          state_pattern = re.compile(
+              r'  const \[area, setArea\] = useState\("all"\);\n'
+              r'  const \[project, setProject\] = useState\("all"\);\n'
+              r'  const \[query, setQuery\] = useState\(""\);\n'
+              r'  const \[analysisMode, setAnalysisMode\] = useState\("municipalities"\);\n'
+              r'  const \[summaryTab, setSummaryTab\] = useState\("areas"\);\n'
+              r'  const \[selected, setSelected\] = useState\(null\);'
+          )
+          state_replacement = '''  const [area, setArea] = usePersistentState(
             "fao-hn-geohub:geoportal:v3:area",
             "all",
           );
@@ -97,11 +105,15 @@ jobs:
           useEffect(() => {
             basemapRef.current = basemap;
           }, [basemap]);'''
-          replace_once(old_state, new_state, "persistent Geoportal state")
+          if 'fao-hn-geohub:geoportal:v3:area' not in text:
+              text, count = state_pattern.subn(state_replacement, text, count=1)
+              require(count == 1, "persistent Geoportal state")
 
-          replace_once(
-              '        mapRef.current = map;\n        map.fitBounds(HONDURAS_BOUNDS, { padding: [22, 22] });',
-              '''        mapRef.current = map;
+          viewport_old = (
+              "        mapRef.current = map;\n"
+              "        map.fitBounds(HONDURAS_BOUNDS, { padding: [22, 22] });"
+          )
+          viewport_new = '''        mapRef.current = map;
                 const savedView = mapViewRef.current;
                 if (
                   savedView &&
@@ -115,26 +127,32 @@ jobs:
                   );
                 } else {
                   map.fitBounds(HONDURAS_BOUNDS, { padding: [22, 22] });
-                }''',
-              "restore map viewport",
-          )
+                }'''
+          require(viewport_old in text or "const savedView = mapViewRef.current" in text, "restore map viewport")
+          if "const savedView = mapViewRef.current" not in text:
+              text = text.replace(viewport_old, viewport_new, 1)
 
-          replace_once(
-              '''          mapRef.current.removeLayer(dark);
-                    streets.addTo(mapRef.current);
-                    setMapMessage(''',
-              '''          mapRef.current.removeLayer(dark);
-                    streets.addTo(mapRef.current);
-                    activeBaseLayerRef.current = streets;
-                    setBasemap("Calles · OpenStreetMap");
-                    setMapMessage(''',
-              "basemap fallback state",
+          fallback_old = (
+              "          mapRef.current.removeLayer(dark);\n"
+              "          streets.addTo(mapRef.current);\n"
+              "          setMapMessage("
           )
+          fallback_new = (
+              "          mapRef.current.removeLayer(dark);\n"
+              "          streets.addTo(mapRef.current);\n"
+              "          activeBaseLayerRef.current = streets;\n"
+              "          setBasemap(\"Calles · OpenStreetMap\");\n"
+              "          setMapMessage("
+          )
+          require(fallback_old in text or "activeBaseLayerRef.current = streets" in text, "fallback basemap state")
+          if "activeBaseLayerRef.current = streets" not in text:
+              text = text.replace(fallback_old, fallback_new, 1)
 
-          replace_once(
-              '''        dark.addTo(map);
-                L.control.scale({ imperial: false, position: "bottomleft" }).addTo(map);''',
-              '''        const initialBaseLayer =
+          initial_old = (
+              "        dark.addTo(map);\n"
+              "        L.control.scale({ imperial: false, position: \"bottomleft\" }).addTo(map);"
+          )
+          initial_new = '''        const initialBaseLayer =
                   baseLayersRef.current[basemapRef.current] || dark;
                 initialBaseLayer.addTo(map);
                 activeBaseLayerRef.current = initialBaseLayer;
@@ -153,13 +171,19 @@ jobs:
                   });
                 });
 
-                L.control.scale({ imperial: false, position: "bottomleft" }).addTo(map);''',
-              "initial basemap and map view listener",
-          )
+                L.control.scale({ imperial: false, position: "bottomleft" }).addTo(map);'''
+          require(initial_old in text or "const initialBaseLayer" in text, "initial basemap listeners")
+          if "const initialBaseLayer" not in text:
+              text = text.replace(initial_old, initial_new, 1)
 
-          replace_once(
-              '      baseLayersRef.current = null;\n    };\n  }, [retryToken]);',
-              '''      baseLayersRef.current = null;
+          cleanup_old = (
+              "      leafletRef.current = null;\n"
+              "      baseLayersRef.current = null;\n"
+              "    };\n"
+              "  }, [retryToken]);"
+          )
+          cleanup_new = '''      leafletRef.current = null;
+              baseLayersRef.current = null;
               activeBaseLayerRef.current = null;
             };
           }, [retryToken]);
@@ -177,58 +201,56 @@ jobs:
             }
             target.addTo(map);
             activeBaseLayerRef.current = target;
-          }, [basemap, mapReady]);''',
-              "basemap switching effect",
+          }, [basemap, mapReady]);'''
+          require(cleanup_old in text or "const target = baseLayers[basemap]" in text, "basemap switching effect")
+          if "const target = baseLayers[basemap]" not in text:
+              text = text.replace(cleanup_old, cleanup_new, 1)
+
+          filter_marker = (
+              "          </div>\n\n"
+              "          <div className=\"geo-analysis-mode\">"
           )
-
-          old_filter_end = '''            </label>
-                  </div>
-
-                  <div className="geo-analysis-mode">'''
-          new_filter_end = '''            </label>
-                    <label className="field geo-basemap-field">
-                      <span>Mapa base</span>
-                      <select
-                        onChange={(event) => setBasemap(event.target.value)}
-                        value={basemap}
-                      >
-                        <option value="Oscuro · Esri">Oscuro · predeterminado</option>
-                        <option value="Calles · OpenStreetMap">Calles · OpenStreetMap</option>
-                        <option value="Topográfico · Esri">Topográfico · Esri</option>
-                        <option value="Satélite · Esri">Satélite · Esri</option>
-                      </select>
-                    </label>
-                    <button
-                      className="geo-reset-filters"
-                      onClick={() => {
-                        setArea("all");
-                        setProject("all");
-                        setQuery("");
-                        setAnalysisMode("municipalities");
-                        setSummaryTab("areas");
-                        setBasemap("Oscuro · Esri");
-                        setSelected(null);
-                        mapRef.current?.fitBounds(HONDURAS_BOUNDS, {
-                          padding: [22, 22],
-                        });
-                      }}
-                      type="button"
+          filter_replacement = '''          <label className="field geo-basemap-field">
+                    <span>Mapa base</span>
+                    <select
+                      onChange={(event) => setBasemap(event.target.value)}
+                      value={basemap}
                     >
-                      Restablecer filtros y mapa
-                    </button>
-                  </div>
+                      <option value="Oscuro · Esri">Oscuro · predeterminado</option>
+                      <option value="Calles · OpenStreetMap">Calles · OpenStreetMap</option>
+                      <option value="Topográfico · Esri">Topográfico · Esri</option>
+                      <option value="Satélite · Esri">Satélite · Esri</option>
+                    </select>
+                  </label>
+                  <button
+                    className="geo-reset-filters"
+                    onClick={() => {
+                      setArea("all");
+                      setProject("all");
+                      setQuery("");
+                      setAnalysisMode("municipalities");
+                      setSummaryTab("areas");
+                      setBasemap("Oscuro · Esri");
+                      setSelected(null);
+                      mapRef.current?.fitBounds(HONDURAS_BOUNDS, {
+                        padding: [22, 22],
+                      });
+                    }}
+                    type="button"
+                  >
+                    Restablecer filtros y mapa
+                  </button>
+                </div>
 
-                  <div className="geo-analysis-mode">'''
-          replace_once(old_filter_end, new_filter_end, "basemap selector")
+                <div className="geo-analysis-mode">'''
+          require(filter_marker in text or "geo-basemap-field" in text, "basemap selector")
+          if "geo-basemap-field" not in text:
+              text = text.replace(filter_marker, filter_replacement, 1)
 
-          old_hint = '''
-                  <div className="map-layer-hint">
-                    <Layers3 size={14} />
-                    <span>Use el control de capas para cambiar mapa base y superposiciones.</span>
-                    <ChevronDown size={13} />
-                  </div>
-          '''
-          replace_once(old_hint, "\n", "overlapping map hint")
+          if '<div className="map-layer-hint">' in text:
+              start = text.index('          <div className="map-layer-hint">')
+              end = text.index('          </div>', start) + len('          </div>')
+              text = text[:start] + text[end:]
 
           path.write_text(text)
           PY
