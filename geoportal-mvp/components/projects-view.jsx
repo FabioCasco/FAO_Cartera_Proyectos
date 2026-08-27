@@ -4,15 +4,17 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
+  DatabaseZap,
   Grid2X2,
   List,
+  PencilLine,
   Plus,
   Search,
-  ShieldCheck,
   SlidersHorizontal,
   Trash2,
 } from "lucide-react";
 import { DeleteProjectDialog } from "@/components/delete-project-dialog";
+import { EditProjectDialog } from "@/components/edit-project-dialog";
 import { getAreas, getProjects } from "@/lib/data";
 import { date, money, percent, statusLabel } from "@/lib/format";
 
@@ -25,10 +27,18 @@ export function ProjectsView() {
   const [view, setView] = useState("grid");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+
+  async function refreshProjects() {
+    const rows = await getProjects();
+    setProjects(rows);
+    return rows;
+  }
 
   useEffect(() => {
     let active = true;
+
     Promise.all([getProjects(), getAreas()])
       .then(([projectRows, areaRows]) => {
         if (!active) return;
@@ -74,11 +84,28 @@ export function ProjectsView() {
     [projects, query, area, status],
   );
 
-  function handleDeleted(projectId) {
-    setProjects((current) =>
-      current.filter((project) => project.id !== projectId),
-    );
-    setDeleteTarget(null);
+  const demoCount = projects.filter((project) => project.is_demo).length;
+
+  async function handleSaved() {
+    setError("");
+    try {
+      await refreshProjects();
+    } catch (refreshError) {
+      setError(
+        refreshError.message || "El proyecto se guardó, pero la cartera no pudo recargarse.",
+      );
+    }
+  }
+
+  async function handleDeleted() {
+    setError("");
+    try {
+      await refreshProjects();
+    } catch (refreshError) {
+      setError(
+        refreshError.message || "El proyecto se retiró, pero la cartera no pudo recargarse.",
+      );
+    }
   }
 
   return (
@@ -88,7 +115,7 @@ export function ProjectsView() {
           <span className="eyebrow">PROJECT PORTFOLIO</span>
           <h1>Cartera de proyectos</h1>
           <p>
-            Explore, filtre, administre y abra la ficha integral de cada
+            Explore, filtre, edite, retire y abra la ficha integral de cada
             intervención.
           </p>
         </div>
@@ -96,6 +123,20 @@ export function ProjectsView() {
           <Plus size={17} /> Agregar proyecto
         </Link>
       </section>
+
+      {demoCount > 0 && (
+        <section className="portfolio-demo-notice">
+          <DatabaseZap size={19} />
+          <div>
+            <strong>{demoCount} registros demostrativos activos</strong>
+            <p>
+              Ahora puede editarlos o retirarlos para limpiar la cartera. Los
+              proyectos creados con el formulario se guardan directamente en
+              Supabase y también disponen de edición y baja lógica.
+            </p>
+          </div>
+        </section>
+      )}
 
       <section className="filter-bar">
         <label className="search-box">
@@ -152,6 +193,7 @@ export function ProjectsView() {
       </section>
 
       {error && <div className="form-error operational-error">{error}</div>}
+
       {loading ? (
         <div className="skeleton-panel">Cargando cartera protegida…</div>
       ) : (
@@ -220,21 +262,29 @@ export function ProjectsView() {
                     </div>
                   </Link>
 
-                  {project.is_demo ? (
-                    <span className="project-protected-tag">
-                      <ShieldCheck size={13} /> DEMO protegido
-                    </span>
-                  ) : (
+                  {project.is_demo && (
+                    <span className="project-demo-tag">DEMO</span>
+                  )}
+
+                  <div className="project-admin-actions">
                     <button
-                      aria-label={`Eliminar ${project.acronym || project.title}`}
-                      className="project-delete-button"
-                      onClick={() => setDeleteTarget(project)}
-                      title="Eliminar de la cartera"
+                      aria-label={`Editar ${project.acronym || project.title}`}
+                      onClick={() => setEditTarget(project)}
+                      title="Editar información principal"
                       type="button"
                     >
-                      <Trash2 size={16} />
+                      <PencilLine size={15} />
                     </button>
-                  )}
+                    <button
+                      aria-label={`Retirar ${project.acronym || project.title}`}
+                      className="project-admin-delete"
+                      onClick={() => setDeleteTarget(project)}
+                      title="Retirar de la cartera"
+                      type="button"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
                 </article>
               ))}
             </section>
@@ -251,7 +301,7 @@ export function ProjectsView() {
                     <th>Avance</th>
                     <th>RRHH</th>
                     <th>Estado</th>
-                    <th>Acciones</th>
+                    <th>Administrar</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -264,33 +314,33 @@ export function ProjectsView() {
                         </Link>
                       </td>
                       <td>{project.primary_area_short_name}</td>
-                      <td>{project.donor}</td>
+                      <td>{project.donor || "—"}</td>
                       <td>{money(project.budget_total)}</td>
                       <td>{percent(project.execution_pct)}</td>
                       <td>{percent(project.physical_progress_pct)}</td>
-                      <td>{project.staff_count}</td>
+                      <td>{project.staff_count || 0}</td>
                       <td>
                         <span className={`status status--${project.status}`}>
                           {statusLabel[project.status]}
                         </span>
                       </td>
                       <td>
-                        <div className="table-actions">
-                          <Link
-                            className="table-action-link"
-                            href={`/project?id=${project.id}`}
+                        <div className="table-admin-actions">
+                          <button
+                            onClick={() => setEditTarget(project)}
+                            title="Editar"
+                            type="button"
                           >
-                            Abrir
-                          </Link>
-                          {!project.is_demo && (
-                            <button
-                              aria-label={`Eliminar ${project.acronym || project.title}`}
-                              onClick={() => setDeleteTarget(project)}
-                              type="button"
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          )}
+                            <PencilLine size={14} />
+                          </button>
+                          <button
+                            className="table-admin-delete"
+                            onClick={() => setDeleteTarget(project)}
+                            title="Retirar"
+                            type="button"
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -302,13 +352,24 @@ export function ProjectsView() {
         </>
       )}
 
-      <DeleteProjectDialog
-        key={deleteTarget?.id || "none"}
-        open={Boolean(deleteTarget)}
-        project={deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        onDeleted={handleDeleted}
-      />
+      {editTarget && (
+        <EditProjectDialog
+          areas={areas}
+          key={`edit-${editTarget.id}`}
+          onClose={() => setEditTarget(null)}
+          onSaved={handleSaved}
+          project={editTarget}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteProjectDialog
+          key={`delete-${deleteTarget.id}`}
+          onClose={() => setDeleteTarget(null)}
+          onDeleted={handleDeleted}
+          project={deleteTarget}
+        />
+      )}
     </div>
   );
 }
