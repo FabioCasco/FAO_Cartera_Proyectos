@@ -2,9 +2,17 @@ name: Prepare Honduras Administrative Boundaries
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/prepare-honduras-boundaries.yml
 
 permissions:
   contents: write
+
+concurrency:
+  group: prepare-honduras-boundaries
+  cancel-in-progress: false
 
 jobs:
   prepare:
@@ -94,13 +102,14 @@ jobs:
                   "centroid_lat": round(centroid.y, 5),
                   "centroid_lon": round(centroid.x, 5),
               }
+              geometry_mapping = mapping(geometry)
               departments.append({
                   "type": "Feature",
                   "id": code,
                   "properties": properties,
                   "geometry": {
-                      **mapping(geometry),
-                      "coordinates": round_coords(mapping(geometry)["coordinates"]),
+                      **geometry_mapping,
+                      "coordinates": round_coords(geometry_mapping["coordinates"]),
                   },
               })
               department_shapes.append((properties, geometry, prep(geometry)))
@@ -114,10 +123,16 @@ jobs:
               point = geometry.representative_point()
 
               department = None
+              best_overlap = 0.0
               for department_properties, department_geometry, prepared in department_shapes:
-                  if prepared.contains(point) or department_geometry.intersects(geometry):
+                  if prepared.contains(point):
                       department = department_properties
                       break
+                  if department_geometry.intersects(geometry):
+                      overlap = department_geometry.intersection(geometry).area
+                      if overlap > best_overlap:
+                          best_overlap = overlap
+                          department = department_properties
               if department is None:
                   department = {
                       "department_code": "",
@@ -137,13 +152,14 @@ jobs:
                   "centroid_lat": round(point.y, 5),
                   "centroid_lon": round(point.x, 5),
               }
+              geometry_mapping = mapping(geometry)
               municipalities.append({
                   "type": "Feature",
                   "id": code,
                   "properties": properties,
                   "geometry": {
-                      **mapping(geometry),
-                      "coordinates": round_coords(mapping(geometry)["coordinates"]),
+                      **geometry_mapping,
+                      "coordinates": round_coords(geometry_mapping["coordinates"]),
                   },
               })
               municipality_index.append(properties)
