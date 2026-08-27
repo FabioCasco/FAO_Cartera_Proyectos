@@ -1,6 +1,6 @@
 import "./globals.css";
 import "./operational.css";
-import "maplibre-gl/dist/maplibre-gl.css";
+import "./operational-v03.css";
 import { AppShell } from "@/components/app-shell";
 import { AuthProvider, OperationalGate } from "@/components/auth-provider";
 
