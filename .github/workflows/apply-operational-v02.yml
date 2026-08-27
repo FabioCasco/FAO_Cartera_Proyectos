@@ -78,7 +78,30 @@ jobs:
           '''
           if old_map not in map_text:
               raise SystemExit("MapLibre fallback effect branch not found")
-          map_path.write_text(map_text.replace(old_map, new_map, 1))
+          map_text = map_text.replace(old_map, new_map, 1)
+
+          old_map_catch = '''    } catch (error) {
+                setMapStatus("fallback");
+                setMapMessage(
+                  `No fue posible iniciar MapLibre: ${error.message}. Se muestra la vista de respaldo.`,
+                );
+              }
+          '''
+          new_map_catch = '''    } catch (error) {
+                const startupError =
+                  error instanceof Error ? error.message : String(error);
+                window.setTimeout(() => {
+                  setMapStatus("fallback");
+                  setMapMessage(
+                    `No fue posible iniciar MapLibre: ${startupError}. Se muestra la vista de respaldo.`,
+                  );
+                }, 0);
+              }
+          '''
+          if old_map_catch not in map_text:
+              raise SystemExit("MapLibre startup catch pattern not found")
+          map_text = map_text.replace(old_map_catch, new_map_catch, 1)
+          map_path.write_text(map_text)
           PY
 
       - name: Setup Node.js
