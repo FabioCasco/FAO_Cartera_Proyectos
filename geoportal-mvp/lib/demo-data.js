@@ -1,0 +1,56 @@
+export const demoAreas = [
+  { id: 1, code: "BP", slug: "produccion", short_name: "Producción", name: "Mejor Producción", accent: "#72D6C9", project_count: 2, total_budget: 10500000, spent: 6960000, staff_count: 17, execution_pct: 66.3, physical_progress_pct: 64.5 },
+  { id: 2, code: "BN", slug: "nutricion", short_name: "Nutrición", name: "Mejor Nutrición", accent: "#E5B86B", project_count: 1, total_budget: 3100000, spent: 890000, staff_count: 7, execution_pct: 28.7, physical_progress_pct: 31.0 },
+  { id: 3, code: "BE", slug: "ambiente", short_name: "Ambiente", name: "Mejor Ambiente", accent: "#77B5E8", project_count: 1, total_budget: 8400000, spent: 3150000, staff_count: 12, execution_pct: 37.5, physical_progress_pct: 44.0 },
+  { id: 4, code: "BL", slug: "vida", short_name: "Vida", name: "Mejor Vida", accent: "#A99BE7", project_count: 2, total_budget: 8700000, spent: 4540000, staff_count: 16, execution_pct: 52.2, physical_progress_pct: 46.0 },
+];
+
+export const demoProjects = [
+  { id: "demo-reverde", code: "DEMO-HND-001", acronym: "REVERDE", title: "Restauración productiva y resiliencia de paisajes", primary_area_id: 3, primary_area_slug: "ambiente", primary_area_short_name: "Ambiente", primary_area_accent: "#77B5E8", budget_total: 8400000, spent: 3150000, commitments: 4170000, execution_pct: 37.5, utilization_pct: 49.6, physical_progress_pct: 44, start_date: "2024-01-15", end_date: "2028-12-31", status: "active", donor: "Donante multilateral · DEMO", coordinator: "Coordinación REVERDE", staff_count: 12, component_count: 4, indicator_count: 18, departments: ["Choluteca", "La Paz", "Valle"], municipalities: ["Choluteca", "Marcala", "Nacaome"], summary: "Muestra demostrativa para restauración de paisajes, gestión sostenible de recursos y resiliencia climática." },
+  { id: "demo-agriplus", code: "DEMO-HND-002", acronym: "AGRI+", title: "Innovación y agricultura de precisión para pequeños productores", primary_area_id: 1, primary_area_slug: "produccion", primary_area_short_name: "Producción", primary_area_accent: "#72D6C9", budget_total: 4200000, spent: 1620000, commitments: 2050000, execution_pct: 38.6, utilization_pct: 48.8, physical_progress_pct: 41, start_date: "2025-02-01", end_date: "2028-01-31", status: "active", donor: "Cooperación técnica · DEMO", coordinator: "Coordinación AGRI+", staff_count: 8, component_count: 3, indicator_count: 14, departments: ["El Paraíso", "Olancho"], municipalities: ["Danlí", "Juticalpa"], summary: "Innovación, datos y servicios agroclimáticos para mejorar productividad y decisiones de finca." },
+  { id: "demo-nutrir", code: "DEMO-HND-003", acronym: "NUTRIR", title: "Sistemas alimentarios territoriales y nutrición rural", primary_area_id: 2, primary_area_slug: "nutricion", primary_area_short_name: "Nutrición", primary_area_accent: "#E5B86B", budget_total: 3100000, spent: 890000, commitments: 1240000, execution_pct: 28.7, utilization_pct: 40, physical_progress_pct: 31, start_date: "2025-06-01", end_date: "2027-11-30", status: "attention", donor: "Fondo conjunto · DEMO", coordinator: "Coordinación NUTRIR", staff_count: 7, component_count: 3, indicator_count: 12, departments: ["Intibucá", "Lempira"], municipalities: ["La Esperanza", "Gracias"], summary: "Fortalecimiento de dietas saludables, compras locales y sistemas alimentarios inclusivos." },
+  { id: "demo-vidarural", code: "DEMO-HND-004", acronym: "VIDA RURAL", title: "Inclusión económica y medios de vida rurales", primary_area_id: 4, primary_area_slug: "vida", primary_area_short_name: "Vida", primary_area_accent: "#A99BE7", budget_total: 5800000, spent: 3520000, commitments: 4130000, execution_pct: 60.7, utilization_pct: 71.2, physical_progress_pct: 63, start_date: "2023-09-01", end_date: "2027-08-31", status: "active", donor: "Socio bilateral · DEMO", coordinator: "Coordinación VIDA RURAL", staff_count: 10, component_count: 4, indicator_count: 16, departments: ["Copán", "Santa Bárbara"], municipalities: ["Santa Rosa de Copán", "Santa Bárbara"], summary: "Empleo rural, emprendimientos y fortalecimiento organizativo para medios de vida sostenibles." },
+  { id: "demo-agroclima", code: "DEMO-HND-005", acronym: "AGROCLIMA", title: "Gestión de riesgos y resiliencia agroclimática", primary_area_id: 4, primary_area_slug: "vida", primary_area_short_name: "Vida", primary_area_accent: "#A99BE7", budget_total: 2900000, spent: 1020000, commitments: 1510000, execution_pct: 35.2, utilization_pct: 52.1, physical_progress_pct: 29, start_date: "2025-01-15", end_date: "2027-05-31", status: "critical", donor: "Respuesta y resiliencia · DEMO", coordinator: "Coordinación AGROCLIMA", staff_count: 6, component_count: 3, indicator_count: 10, departments: ["Choluteca", "El Paraíso"], municipalities: ["Choluteca", "Danlí"], summary: "Servicios de alerta, reducción de riesgo y capacidades para anticipar impactos climáticos." },
+  { id: "demo-valor", code: "DEMO-HND-006", acronym: "VALOR+", title: "Cadenas de valor y acceso inclusivo a mercados", primary_area_id: 1, primary_area_slug: "produccion", primary_area_short_name: "Producción", primary_area_accent: "#72D6C9", budget_total: 6300000, spent: 5340000, commitments: 5790000, execution_pct: 84.8, utilization_pct: 91.9, physical_progress_pct: 88, start_date: "2022-07-01", end_date: "2026-12-31", status: "closing", donor: "Programa de inversión · DEMO", coordinator: "Coordinación VALOR+", staff_count: 9, component_count: 4, indicator_count: 15, departments: ["Comayagua", "Francisco Morazán"], municipalities: ["Comayagua", "Distrito Central"], summary: "Desarrollo empresarial, acceso a mercados y servicios para organizaciones de productores." },
+];
+
+export const demoMonthly = [
+  ["2026-01", 8596000, 6993000, 8568000], ["2026-02", 9824000, 7925400, 9689400], ["2026-03", 11359000, 9168600, 11153100], ["2026-04", 12587000, 10411800, 12585300], ["2026-05", 14122000, 11655000, 14080500], ["2026-06", 15657000, 12898200, 15544200], ["2026-07", 17192000, 14141400, 17039400], ["2026-08", 18727000, 15540000, 18690000],
+].map(([month_key, planned, spent, commitments]) => ({ month_key, planned, spent, commitments }));
+
+export const demoLocations = [
+  ["loc-1", "demo-reverde", "REVERDE", "ambiente", "Choluteca", "Choluteca", -87.1908, 13.3015, "Restauración productiva"],
+  ["loc-2", "demo-reverde", "REVERDE", "ambiente", "Nacaome", "Valle", -87.4876, 13.5361, "Paisaje resiliente"],
+  ["loc-3", "demo-reverde", "REVERDE", "ambiente", "Marcala", "La Paz", -88.0333, 14.15, "Restauración de cuenca"],
+  ["loc-4", "demo-agriplus", "AGRI+", "produccion", "Danlí", "El Paraíso", -86.5833, 14.0333, "Agricultura digital"],
+  ["loc-5", "demo-agriplus", "AGRI+", "produccion", "Juticalpa", "Olancho", -86.2194, 14.6664, "Servicios productivos"],
+  ["loc-6", "demo-nutrir", "NUTRIR", "nutricion", "La Esperanza", "Intibucá", -88.1806, 14.3111, "Sistemas alimentarios"],
+  ["loc-7", "demo-nutrir", "NUTRIR", "nutricion", "Gracias", "Lempira", -88.5833, 14.5833, "Nutrición territorial"],
+  ["loc-8", "demo-vidarural", "VIDA RURAL", "vida", "Santa Rosa de Copán", "Copán", -88.7797, 14.7662, "Emprendimiento rural"],
+  ["loc-9", "demo-vidarural", "VIDA RURAL", "vida", "Santa Bárbara", "Santa Bárbara", -88.2333, 14.9167, "Inclusión económica"],
+  ["loc-10", "demo-agroclima", "AGROCLIMA", "vida", "Choluteca", "Choluteca", -87.185, 13.31, "Gestión de riesgo"],
+  ["loc-11", "demo-agroclima", "AGROCLIMA", "vida", "Danlí", "El Paraíso", -86.575, 14.04, "Alerta temprana"],
+  ["loc-12", "demo-valor", "VALOR+", "produccion", "Comayagua", "Comayagua", -87.6375, 14.4514, "Cadena de valor"],
+  ["loc-13", "demo-valor", "VALOR+", "produccion", "Distrito Central", "Francisco Morazán", -87.2068, 14.0723, "Acceso a mercados"],
+].map(([id, project_id, project_acronym, area_slug, municipality, department, longitude, latitude, intervention_type]) => ({ id, project_id, project_acronym, area_slug, municipality, department, longitude, latitude, intervention_type }));
+
+const names = ["Especialista de proyecto", "Analista de monitoreo", "Especialista territorial", "Asistente de operaciones"];
+
+export function demoProjectDetail(id) {
+  const project = demoProjects.find((item) => item.id === id) || demoProjects[0];
+  const components = Array.from({ length: project.component_count }, (_, index) => ({ id: `${project.id}-c${index + 1}`, code: `C${index + 1}`, title: ["Gobernanza y planificación", "Implementación territorial", "Conocimiento e innovación", "Monitoreo y sostenibilidad"][index] || `Componente ${index + 1}`, description: "Componente demostrativo sujeto a sustitución por la formulación oficial del proyecto.", budget_allocated: project.budget_total / project.component_count, progress_pct: Math.max(0, project.physical_progress_pct - index * 4) }));
+  const results = [
+    { id: `${project.id}-r1`, code: "R1", level: "outcome", title: "Capacidades y condiciones habilitantes fortalecidas", description: "Resultado demostrativo de nivel outcome." },
+    { id: `${project.id}-r2`, code: "P1.1", level: "output", title: "Servicios e instrumentos implementados en territorio", description: "Producto demostrativo vinculado a la intervención." },
+  ];
+  const indicators = [
+    { id: `${project.id}-i1`, result_id: `${project.id}-r1`, code: "IND-01", name: "Organizaciones que aplican capacidades fortalecidas", unit: "organizaciones", baseline_value: 4, target_value: 40, current_value: 23, status: "on_track", data_source: "Registro de proyecto" },
+    { id: `${project.id}-i2`, result_id: `${project.id}-r2`, code: "IND-02", name: "Personas alcanzadas por servicios del proyecto", unit: "personas", baseline_value: 0, target_value: 2200, current_value: 1180, status: project.status === "critical" ? "off_track" : "attention", data_source: "Sistema de seguimiento" },
+  ];
+  const staff = Array.from({ length: Math.min(project.staff_count, 4) }, (_, index) => ({ id: `${project.id}-s${index}`, full_name: `${names[index]} · DEMO`, title: names[index], role_title: names[index], allocation_pct: index === 0 ? 100 : 75, contract_type: "Proyecto" }));
+  const locations = demoLocations.filter((item) => item.project_id === project.id);
+  const risks = [{ id: `${project.id}-risk`, title: "Retraso operativo en actividades críticas", description: "Riesgo demostrativo para activar seguimiento preventivo.", level: project.status === "critical" ? "critical" : "medium", probability: 3, impact: 4, mitigation: "Reprogramación de hitos y seguimiento quincenal.", owner: project.coordinator, status: "open" }];
+  const milestones = [{ id: `${project.id}-m1`, title: "Informe técnico semestral", due_date: "2026-09-30", status: "pending", responsible: project.coordinator }, { id: `${project.id}-m2`, title: "Comité directivo", due_date: "2026-11-15", status: "planned", responsible: "Programas" }];
+  const snapshots = demoMonthly.map((row, index) => ({ snapshot_date: `${row.month_key}-28`, budget_amount: project.budget_total, planned_execution_amount: project.budget_total * ((index + 2) / 12), expenditure_amount: project.spent * ((index + 1) / 8), commitments_amount: project.commitments * ((index + 1) / 8) }));
+  return { project, components, results, indicators, staff, locations, risks, milestones, assets: [], snapshots, updates: [] };
+}

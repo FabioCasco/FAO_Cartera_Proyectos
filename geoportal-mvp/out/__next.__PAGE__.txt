@@ -1,0 +1,22 @@
+1:"$Sreact.fragment"
+2:I[35943,["/FAO_Cartera_Proyectos/_next/static/chunks/0tzlwx5lbgzah.js","/FAO_Cartera_Proyectos/_next/static/chunks/0gpdysd490ya-.js","/FAO_Cartera_Proyectos/_next/static/chunks/1jhjbsd24-v79.js","/FAO_Cartera_Proyectos/_next/static/chunks/45a0-yjtnlsh8.js"],"Dashboard"]
+3:I[97367,["/FAO_Cartera_Proyectos/_next/static/chunks/0tzlwx5lbgzah.js"],"OutletBoundary"]
+4:"$Sreact.suspense"
+8:I[97367,["/FAO_Cartera_Proyectos/_next/static/chunks/0tzlwx5lbgzah.js"],"ViewportBoundary"]
+9:I[97367,["/FAO_Cartera_Proyectos/_next/static/chunks/0tzlwx5lbgzah.js"],"MetadataBoundary"]
+b:I[39756,["/FAO_Cartera_Proyectos/_next/static/chunks/0tzlwx5lbgzah.js"],"LoadingBoundaryProvider"]
+c:I[9437,["/FAO_Cartera_Proyectos/_next/static/chunks/0tzlwx5lbgzah.js"],"AppShell"]
+d:I[39756,["/FAO_Cartera_Proyectos/_next/static/chunks/0tzlwx5lbgzah.js"],"default"]
+e:I[37457,["/FAO_Cartera_Proyectos/_next/static/chunks/0tzlwx5lbgzah.js"],"default"]
+f:I[22016,["/FAO_Cartera_Proyectos/_next/static/chunks/0tzlwx5lbgzah.js"],""]
+:HL["/FAO_Cartera_Proyectos/_next/static/chunks/197aka5unkswj.css","style"]
+7:X
+0:{"buildId":"5BNtw_5LkcgmDvEZJRm-R","data":[{"rsc":["$","$1","c",{"children":[["$","$L2",null,{}],[["$","script","script-0",{"src":"/FAO_Cartera_Proyectos/_next/static/chunks/0gpdysd490ya-.js","async":true}],["$","script","script-1",{"src":"/FAO_Cartera_Proyectos/_next/static/chunks/1jhjbsd24-v79.js","async":true}],["$","script","script-2",{"src":"/FAO_Cartera_Proyectos/_next/static/chunks/45a0-yjtnlsh8.js","async":true}]],["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":"$@6","staleTime":"$7","varyParams":null},{"rsc":["$","$1","h",{"children":[null,["$","$L8",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L9",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Geoportal de Proyectos | FAO Honduras"}],["$","meta","1",{"name":"description","content":"MVP para inteligencia, monitoreo y visualización territorial de la cartera de proyectos."}]]}]}]}],null]}],"isPartial":"$@a","staleTime":"$7","varyParams":null},{"rsc":["$","$Lb",null,{"loading":[["$","div","l",{"className":"skeleton-panel","children":"Cargando inteligencia de cartera…"}],[],null],"children":["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/FAO_Cartera_Proyectos/_next/static/chunks/197aka5unkswj.css","precedence":"next"}],["$","script","script-0",{"src":"/FAO_Cartera_Proyectos/_next/static/chunks/0tzlwx5lbgzah.js","async":true}]],["$","html",null,{"lang":"es","children":["$","body",null,{"children":["$","$Lc",null,{"children":["$","$Ld",null,{"parallelRouterKey":"children","template":["$","$Le",null,{}],"notFound":[["$","div",null,{"className":"empty-state","children":[["$","strong",null,{"children":"Contenido no encontrado"}],["$","p",null,{"children":"La ruta o el proyecto solicitado no está disponible."}],["$","$Lf",null,{"className":"primary-button","href":"/projects","children":"Volver a la cartera"}]]}],[]]}]}]}]}]]}]}],"isPartial":"$@10","staleTime":"$7","varyParams":null}],"isUpgradeableISRFallback":false,"a":"$@11","rootVaryParams":null,"needsRuntimeRequest":"$@12"}
+5:null
+7:300
+12:true
+7:C
+11:0
+a:"$undefined"
+10:"$undefined"
+6:"$undefined"
