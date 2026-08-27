@@ -35,7 +35,7 @@ jobs:
           cache: npm
           cache-dependency-path: geoportal-mvp/package-lock.json
 
-      - name: Validate Supabase public configuration
+      - name: Validate Supabase operational configuration
         shell: bash
         env:
           SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || 'https://xweafcknhbaxpnfeniiq.supabase.co' }}
@@ -49,7 +49,7 @@ jobs:
             echo "::error::Repository secret NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is missing."
             exit 1
           fi
-          echo "Supabase public configuration detected."
+          echo "Supabase operational configuration detected."
 
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
@@ -64,8 +64,7 @@ jobs:
           NEXT_PUBLIC_BASE_PATH: /FAO_Cartera_Proyectos
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || 'https://xweafcknhbaxpnfeniiq.supabase.co' }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
-          NEXT_PUBLIC_HONDURAS_ADM2_GEOJSON_URL: https://raw.githubusercontent.com/wmgeolab/geoBoundaries/main/releaseData/gbOpen/HND/ADM2/geoBoundaries-HND-ADM2_simplified.geojson
-          NEXT_PUBLIC_DEPLOYMENT_MODE: public-demo
+          NEXT_PUBLIC_DEPLOYMENT_MODE: operational
 
       - name: Add nojekyll marker
         run: touch out/.nojekyll
