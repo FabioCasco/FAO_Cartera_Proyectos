@@ -70,11 +70,15 @@ export async function getGeoportalSnapshot() {
   };
 }
 
+export async function loadHondurasAdminIndex() {
+  return fetchJson("/data/hnd-admin-index.json", "Catálogo administrativo");
+}
+
 export async function loadHondurasBoundaries() {
   const [departments, municipalities, index] = await Promise.all([
     fetchJson("/data/hnd-adm1.geojson", "Límites departamentales"),
     fetchJson("/data/hnd-adm2.geojson", "Límites municipales"),
-    fetchJson("/data/hnd-admin-index.json", "Catálogo administrativo"),
+    loadHondurasAdminIndex(),
   ]);
 
   return { departments, municipalities, index };
