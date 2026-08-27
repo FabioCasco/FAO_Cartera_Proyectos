@@ -1,0 +1,528 @@
+/* FAO-HN GeoHub · operational refinements v0.3 */
+
+.portfolio-demo-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 15px 17px;
+  border: 1px solid rgba(105, 207, 216, 0.2);
+  border-radius: 15px;
+  background: linear-gradient(135deg, rgba(105, 207, 216, 0.08), rgba(14, 22, 30, 0.8));
+  color: #b8c8d1;
+}
+
+.portfolio-demo-notice > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--cyan);
+}
+
+.portfolio-demo-notice strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.portfolio-demo-notice p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.project-card--managed {
+  padding: 0;
+  overflow: hidden;
+}
+
+.project-card--managed::before {
+  z-index: 2;
+}
+
+.project-card-content {
+  display: block;
+  min-height: 310px;
+  padding: 20px 20px 58px;
+}
+
+.project-card-content > p {
+  min-height: 48px;
+  margin: 0;
+  color: #97a5b0;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.project-demo-tag {
+  position: absolute;
+  left: 20px;
+  bottom: 19px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 9px;
+  border: 1px solid rgba(169, 153, 229, 0.24);
+  border-radius: 999px;
+  background: rgba(169, 153, 229, 0.08);
+  color: #c5b9ef;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.project-admin-actions {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  z-index: 5;
+  display: flex;
+  gap: 7px;
+}
+
+.project-admin-actions button,
+.table-admin-actions button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #2b3c49;
+  border-radius: 10px;
+  background: rgba(11, 18, 25, 0.95);
+  color: #a8bcc8;
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+
+.project-admin-actions button:hover,
+.table-admin-actions button:hover {
+  border-color: rgba(105, 207, 216, 0.42);
+  color: var(--cyan);
+  transform: translateY(-1px);
+}
+
+.project-admin-actions .project-admin-delete:hover,
+.table-admin-actions .table-admin-delete:hover {
+  border-color: rgba(231, 124, 124, 0.45);
+  color: #f09a9a;
+}
+
+.table-admin-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.danger-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 15px;
+  border: 1px solid rgba(231, 124, 124, 0.34);
+  border-radius: 12px;
+  background: rgba(231, 124, 124, 0.09);
+  color: #f3a2a2;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+
+.danger-button:hover:not(:disabled) {
+  border-color: rgba(231, 124, 124, 0.62);
+  background: rgba(231, 124, 124, 0.14);
+  transform: translateY(-1px);
+}
+
+.danger-button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.danger-button--compact {
+  min-height: 42px;
+}
+
+.project-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.hero-demo-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border: 1px solid rgba(169, 153, 229, 0.25);
+  border-radius: 999px;
+  background: rgba(169, 153, 229, 0.08);
+  color: #c5b9ef;
+  font-size: 8px;
+  letter-spacing: 0.09em;
+}
+
+.project-demo-management-note,
+.demo-edit-warning,
+.demo-delete-warning {
+  padding: 12px 14px;
+  border: 1px solid rgba(229, 184, 107, 0.25);
+  border-radius: 13px;
+  background: rgba(229, 184, 107, 0.07);
+  color: #d7c39a;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.demo-edit-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-bottom: 16px;
+}
+
+.demo-edit-warning svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(1, 5, 8, 0.76);
+  backdrop-filter: blur(14px);
+}
+
+.edit-project-dialog,
+.delete-dialog {
+  width: min(860px, 100%);
+  max-height: min(880px, calc(100vh - 48px));
+  overflow: auto;
+  border: 1px solid #2a3b48;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #101923, #090f15);
+  box-shadow: 0 35px 90px rgba(0, 0, 0, 0.5);
+}
+
+.edit-project-dialog {
+  padding: 22px;
+}
+
+.edit-project-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 22px;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.edit-project-head h2 {
+  margin: 6px 0 6px;
+  font-size: 23px;
+  letter-spacing: -0.035em;
+}
+
+.edit-project-head p {
+  max-width: 680px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.edit-project-head > button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+  background: #0a1117;
+  color: #aebcc5;
+  cursor: pointer;
+}
+
+.edit-project-form {
+  display: grid;
+  gap: 18px;
+}
+
+.edit-project-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.delete-dialog {
+  width: min(540px, 100%);
+  position: relative;
+  padding: 25px;
+}
+
+.delete-dialog h2 {
+  margin: 8px 0 10px;
+  font-size: 24px;
+  letter-spacing: -0.035em;
+}
+
+.delete-dialog > p {
+  margin: 0 0 17px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.delete-dialog-close {
+  position: absolute;
+  top: 17px;
+  right: 17px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+  background: #0a1117;
+  cursor: pointer;
+}
+
+.delete-dialog-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(231, 124, 124, 0.28);
+  border-radius: 14px;
+  background: rgba(231, 124, 124, 0.08);
+  color: #f09a9a;
+}
+
+.delete-dialog form {
+  display: grid;
+  gap: 15px;
+  margin-top: 16px;
+}
+
+.delete-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.compact-empty-state {
+  min-height: 150px;
+}
+
+.project-load-error {
+  min-height: 360px;
+}
+
+/* Leaflet map: DOM/SVG rendering avoids the WebGL crash observed in Safari. */
+.leaflet-map-canvas {
+  width: 100%;
+  min-height: 690px;
+  background: #081017;
+}
+
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  min-height: 690px;
+  background: #081017;
+  color: var(--text);
+  font-family: inherit;
+}
+
+.leaflet-control-zoom a,
+.leaflet-control-attribution {
+  border-color: #2a3b48 !important;
+  background: rgba(9, 16, 22, 0.94) !important;
+  color: #b7c5ce !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: #14212b !important;
+  color: var(--cyan) !important;
+}
+
+.leaflet-control-attribution a {
+  color: #82cbd2 !important;
+}
+
+.leaflet-marker-shell {
+  border: 0;
+  background: transparent;
+}
+
+.leaflet-project-marker {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgba(234, 243, 247, 0.8);
+  border-radius: 50%;
+  color: #071018;
+  font-size: 11px;
+  font-weight: 800;
+  box-shadow: 0 0 0 9px rgba(105, 207, 216, 0.11), 0 8px 24px rgba(0, 0, 0, 0.34);
+}
+
+.leaflet-project-marker--one {
+  background: #72d6c9;
+}
+
+.leaflet-project-marker--two {
+  background: #e5b86b;
+  box-shadow: 0 0 0 10px rgba(229, 184, 107, 0.12), 0 8px 24px rgba(0, 0, 0, 0.34);
+}
+
+.leaflet-project-marker--three {
+  background: #e77c7c;
+  box-shadow: 0 0 0 11px rgba(231, 124, 124, 0.12), 0 8px 24px rgba(0, 0, 0, 0.34);
+}
+
+.leaflet-tooltip {
+  border: 1px solid #314553;
+  border-radius: 9px;
+  background: rgba(8, 15, 21, 0.96);
+  color: #dfeaed;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  font-size: 10px;
+}
+
+.leaflet-tooltip::before {
+  border-top-color: #314553 !important;
+}
+
+.map-health {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(620px, calc(100% - 105px));
+  min-height: 34px;
+  padding: 8px 11px;
+  border: 1px solid #2b3c49;
+  border-radius: 11px;
+  background: rgba(7, 13, 18, 0.9);
+  color: #adbbc4;
+  font-size: 9px;
+  backdrop-filter: blur(10px);
+}
+
+.map-health button {
+  border: 0;
+  background: transparent;
+  color: var(--cyan);
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.map-health--fallback {
+  border-color: rgba(229, 184, 107, 0.34);
+  color: #e5cc9d;
+}
+
+.fallback-map {
+  min-height: 690px;
+}
+
+.geo-route-error {
+  min-height: calc(100vh - 170px);
+  display: grid;
+  place-items: center;
+}
+
+.geo-route-error-card {
+  width: min(560px, 100%);
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: linear-gradient(145deg, #101923, #090f15);
+  text-align: center;
+}
+
+.geo-route-error-card h2 {
+  margin: 10px 0 8px;
+  font-size: 26px;
+}
+
+.geo-route-error-card p {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.geo-route-error-actions {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+}
+
+@media (max-width: 1100px) {
+  .project-hero-actions {
+    justify-content: flex-start;
+  }
+
+  .leaflet-map-canvas,
+  .leaflet-container,
+  .fallback-map {
+    min-height: 590px;
+  }
+}
+
+@media (max-width: 720px) {
+  .project-admin-actions {
+    right: 14px;
+  }
+
+  .project-demo-tag {
+    left: 16px;
+  }
+
+  .edit-project-dialog,
+  .delete-dialog {
+    max-height: calc(100vh - 24px);
+    border-radius: 16px;
+  }
+
+  .modal-backdrop {
+    padding: 12px;
+  }
+
+  .edit-project-actions,
+  .delete-dialog-actions,
+  .project-hero-actions,
+  .geo-route-error-actions {
+    flex-direction: column;
+  }
+
+  .edit-project-actions > *,
+  .delete-dialog-actions > *,
+  .project-hero-actions > *,
+  .geo-route-error-actions > * {
+    width: 100%;
+  }
+
+  .leaflet-map-canvas,
+  .leaflet-container,
+  .fallback-map {
+    min-height: 520px;
+  }
+}
