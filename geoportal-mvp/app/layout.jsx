@@ -2,6 +2,7 @@ import "./globals.css";
 import "./operational.css";
 import "./operational-v03.css";
 import "./geoportal-v2.css";
+import "./operational-v05.css";
 import { AppShell } from "@/components/app-shell";
 import { AuthProvider, OperationalGate } from "@/components/auth-provider";
 
