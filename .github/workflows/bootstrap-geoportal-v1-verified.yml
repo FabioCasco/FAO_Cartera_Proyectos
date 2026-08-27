@@ -45,6 +45,20 @@ jobs:
       - name: Generate application source
         run: bash bootstrap-geoportal-v1.sh geoportal-mvp
 
+      - name: Normalize generated Project 360 layout
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          path = Path("geoportal-mvp/components/project-360.jsx")
+          text = path.read_text()
+          old = '  const { id } = useParams(); const [data, setData]'
+          new = '  const { id } = useParams();\n  const [data, setData]'
+          if old not in text:
+              raise SystemExit("Expected Project360 inline state pattern was not found")
+          path.write_text(text.replace(old, new, 1))
+          PY
+
       - name: Prepare static GitHub Pages application
         run: python scripts/prepare-github-pages.py geoportal-mvp
 
