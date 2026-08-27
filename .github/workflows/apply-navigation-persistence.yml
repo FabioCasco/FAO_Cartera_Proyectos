@@ -1,0 +1,269 @@
+name: Apply Navigation Persistence
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-navigation-persistence.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-navigation-persistence
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch Geoportal state and basemap controls
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          path = Path("geoportal-mvp/components/geoportal-map.jsx")
+          text = path.read_text()
+
+          def replace_once(old, new, label):
+              global text
+              if old not in text:
+                  raise SystemExit(f"Pattern not found: {label}")
+              text = text.replace(old, new, 1)
+
+          text = text.replace("  ChevronDown,\n", "", 1)
+
+          replace_once(
+              'import { money, percent, statusLabel } from "@/lib/format";\n',
+              'import { money, percent, statusLabel } from "@/lib/format";\nimport { usePersistentState } from "@/lib/persistent-state";\n',
+              "persistent state import",
+          )
+
+          replace_once(
+              '  const baseLayersRef = useRef(null);\n  const overlayLayersRef = useRef({});',
+              '  const baseLayersRef = useRef(null);\n  const activeBaseLayerRef = useRef(null);\n  const overlayLayersRef = useRef({});',
+              "active basemap ref",
+          )
+
+          old_state = '''  const [area, setArea] = useState("all");
+          const [project, setProject] = useState("all");
+          const [query, setQuery] = useState("");
+          const [analysisMode, setAnalysisMode] = useState("municipalities");
+          const [summaryTab, setSummaryTab] = useState("areas");
+          const [selected, setSelected] = useState(null);'''
+          new_state = '''  const [area, setArea] = usePersistentState(
+            "fao-hn-geohub:geoportal:v3:area",
+            "all",
+          );
+          const [project, setProject] = usePersistentState(
+            "fao-hn-geohub:geoportal:v3:project",
+            "all",
+          );
+          const [query, setQuery] = usePersistentState(
+            "fao-hn-geohub:geoportal:v3:query",
+            "",
+          );
+          const [analysisMode, setAnalysisMode] = usePersistentState(
+            "fao-hn-geohub:geoportal:v3:analysis-mode",
+            "municipalities",
+          );
+          const [summaryTab, setSummaryTab] = usePersistentState(
+            "fao-hn-geohub:geoportal:v3:summary-tab",
+            "areas",
+          );
+          const [basemap, setBasemap] = usePersistentState(
+            "fao-hn-geohub:geoportal:v3:basemap",
+            "Oscuro · Esri",
+          );
+          const [mapView, setMapView] = usePersistentState(
+            "fao-hn-geohub:geoportal:v3:map-view",
+            null,
+          );
+          const [selected, setSelected] = useState(null);
+          const mapViewRef = useRef(mapView);
+          const basemapRef = useRef(basemap);
+
+          useEffect(() => {
+            mapViewRef.current = mapView;
+          }, [mapView]);
+
+          useEffect(() => {
+            basemapRef.current = basemap;
+          }, [basemap]);'''
+          replace_once(old_state, new_state, "persistent Geoportal state")
+
+          replace_once(
+              '        mapRef.current = map;\n        map.fitBounds(HONDURAS_BOUNDS, { padding: [22, 22] });',
+              '''        mapRef.current = map;
+                const savedView = mapViewRef.current;
+                if (
+                  savedView &&
+                  Number.isFinite(Number(savedView.latitude)) &&
+                  Number.isFinite(Number(savedView.longitude)) &&
+                  Number.isFinite(Number(savedView.zoom))
+                ) {
+                  map.setView(
+                    [Number(savedView.latitude), Number(savedView.longitude)],
+                    Number(savedView.zoom),
+                  );
+                } else {
+                  map.fitBounds(HONDURAS_BOUNDS, { padding: [22, 22] });
+                }''',
+              "restore map viewport",
+          )
+
+          replace_once(
+              '''          mapRef.current.removeLayer(dark);
+                    streets.addTo(mapRef.current);
+                    setMapMessage(''',
+              '''          mapRef.current.removeLayer(dark);
+                    streets.addTo(mapRef.current);
+                    activeBaseLayerRef.current = streets;
+                    setBasemap("Calles · OpenStreetMap");
+                    setMapMessage(''',
+              "basemap fallback state",
+          )
+
+          replace_once(
+              '''        dark.addTo(map);
+                L.control.scale({ imperial: false, position: "bottomleft" }).addTo(map);''',
+              '''        const initialBaseLayer =
+                  baseLayersRef.current[basemapRef.current] || dark;
+                initialBaseLayer.addTo(map);
+                activeBaseLayerRef.current = initialBaseLayer;
+
+                map.on("baselayerchange", (event) => {
+                  activeBaseLayerRef.current = event.layer;
+                  if (event.name) setBasemap(event.name);
+                });
+
+                map.on("moveend", () => {
+                  const center = map.getCenter();
+                  setMapView({
+                    latitude: Number(center.lat.toFixed(6)),
+                    longitude: Number(center.lng.toFixed(6)),
+                    zoom: Number(map.getZoom().toFixed(2)),
+                  });
+                });
+
+                L.control.scale({ imperial: false, position: "bottomleft" }).addTo(map);''',
+              "initial basemap and map view listener",
+          )
+
+          replace_once(
+              '      baseLayersRef.current = null;\n    };\n  }, [retryToken]);',
+              '''      baseLayersRef.current = null;
+              activeBaseLayerRef.current = null;
+            };
+          }, [retryToken]);
+
+          useEffect(() => {
+            const map = mapRef.current;
+            const baseLayers = baseLayersRef.current;
+            if (!map || !mapReady || !baseLayers) return;
+
+            const target = baseLayers[basemap] || baseLayers["Oscuro · Esri"];
+            if (!target || activeBaseLayerRef.current === target) return;
+
+            for (const layer of Object.values(baseLayers)) {
+              if (map.hasLayer(layer)) map.removeLayer(layer);
+            }
+            target.addTo(map);
+            activeBaseLayerRef.current = target;
+          }, [basemap, mapReady]);''',
+              "basemap switching effect",
+          )
+
+          old_filter_end = '''            </label>
+                  </div>
+
+                  <div className="geo-analysis-mode">'''
+          new_filter_end = '''            </label>
+                    <label className="field geo-basemap-field">
+                      <span>Mapa base</span>
+                      <select
+                        onChange={(event) => setBasemap(event.target.value)}
+                        value={basemap}
+                      >
+                        <option value="Oscuro · Esri">Oscuro · predeterminado</option>
+                        <option value="Calles · OpenStreetMap">Calles · OpenStreetMap</option>
+                        <option value="Topográfico · Esri">Topográfico · Esri</option>
+                        <option value="Satélite · Esri">Satélite · Esri</option>
+                      </select>
+                    </label>
+                    <button
+                      className="geo-reset-filters"
+                      onClick={() => {
+                        setArea("all");
+                        setProject("all");
+                        setQuery("");
+                        setAnalysisMode("municipalities");
+                        setSummaryTab("areas");
+                        setBasemap("Oscuro · Esri");
+                        setSelected(null);
+                        mapRef.current?.fitBounds(HONDURAS_BOUNDS, {
+                          padding: [22, 22],
+                        });
+                      }}
+                      type="button"
+                    >
+                      Restablecer filtros y mapa
+                    </button>
+                  </div>
+
+                  <div className="geo-analysis-mode">'''
+          replace_once(old_filter_end, new_filter_end, "basemap selector")
+
+          old_hint = '''
+                  <div className="map-layer-hint">
+                    <Layers3 size={14} />
+                    <span>Use el control de capas para cambiar mapa base y superposiciones.</span>
+                    <ChevronDown size={13} />
+                  </div>
+          '''
+          replace_once(old_hint, "\n", "overlapping map hint")
+
+          path.write_text(text)
+          PY
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: geoportal-mvp/package-lock.json
+
+      - name: Install dependencies
+        working-directory: geoportal-mvp
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint
+        working-directory: geoportal-mvp
+        run: npm run lint
+
+      - name: Build static export
+        working-directory: geoportal-mvp
+        env:
+          GITHUB_PAGES: "true"
+          NEXT_PUBLIC_BASE_PATH: /FAO_Cartera_Proyectos
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || 'https://xweafcknhbaxpnfeniiq.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_DEPLOYMENT_MODE: operational
+        run: npm run build
+
+      - name: Commit changes and remove installer
+        shell: bash
+        run: |
+          rm -f .github/workflows/apply-navigation-persistence.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: preserve Geoportal filters, basemap and viewport"
+          git push
