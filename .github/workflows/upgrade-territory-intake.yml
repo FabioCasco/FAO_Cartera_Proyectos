@@ -1,0 +1,126 @@
+name: Upgrade Project Territory Intake
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/upgrade-territory-intake.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: upgrade-project-territory-intake
+  cancel-in-progress: false
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch project intake
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path("geoportal-mvp/components/project-form.jsx")
+          text = path.read_text()
+
+          old_import = '''import { createProjectBundle, getAreas, uploadProjectAssets } from "@/lib/data";
+          import { LocationPicker } from "./location-picker";'''
+          new_import = '''import { createProjectBundle, getAreas, uploadProjectAssets } from "@/lib/data";
+          import { TerritoryEditor, createEmptyLocation } from "./territory-editor";'''
+          if old_import not in text:
+              raise SystemExit("Project form import pattern not found")
+          text = text.replace(old_import, new_import, 1)
+
+          empty_location_pattern = re.compile(
+              r'const emptyLocation = \(\) => \(\{ geometry_type: "point", department: "", municipality: "", location_name: "", latitude: 14\.0723, longitude: -87\.2068, intervention_type: "", notes: "" \}\);\n'
+          )
+          text, count = empty_location_pattern.subn("", text, count=1)
+          if count != 1:
+              raise SystemExit("Empty location factory pattern not found")
+
+          if "useState([emptyLocation()])" not in text:
+              raise SystemExit("Initial location state pattern not found")
+          text = text.replace(
+              "useState([emptyLocation()])",
+              "useState([createEmptyLocation()])",
+              1,
+          )
+
+          old_locations = '''locations: locations.filter((l) => l.municipality || (l.latitude && l.longitude)).map((l) => ({ ...l, latitude: Number(l.latitude), longitude: Number(l.longitude) }))'''
+          new_locations = '''locations: locations
+            .filter((location) =>
+              location.department ||
+              location.municipality ||
+              (location.latitude !== null && location.longitude !== null),
+            )
+            .map((location) => ({
+              ...location,
+              latitude:
+                location.latitude === null || location.latitude === ""
+                  ? null
+                  : Number(location.latitude),
+              longitude:
+                location.longitude === null || location.longitude === ""
+                  ? null
+                  : Number(location.longitude),
+            }))'''
+          if old_locations not in text:
+              raise SystemExit("Location payload mapping pattern not found")
+          text = text.replace(old_locations, new_locations, 1)
+
+          start = text.find('    {step === 3 && <div className="form-section">')
+          end = text.find('    {step === 4 && <div className="form-section">', start)
+          if start < 0 or end < 0:
+              raise SystemExit("Territory step boundaries not found")
+
+          new_step = '''    {step === 3 && <div className="form-section"><div className="section-title"><span>04</span><div><h2>Territorio y alcance espacial</h2><p>Combine coberturas departamentales, municipales y puntos específicos. El Geoportal transformará estos registros en capas de presencia y convergencia.</p></div></div><TerritoryEditor locations={locations} setLocations={setLocations}/></div>}
+'''
+          text = text[:start] + new_step + text[end:]
+
+          path.write_text(text)
+          PY
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: geoportal-mvp/package-lock.json
+
+      - name: Install dependencies
+        working-directory: geoportal-mvp
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint
+        working-directory: geoportal-mvp
+        run: npm run lint
+
+      - name: Build static export
+        working-directory: geoportal-mvp
+        env:
+          GITHUB_PAGES: "true"
+          NEXT_PUBLIC_BASE_PATH: /FAO_Cartera_Proyectos
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || 'https://xweafcknhbaxpnfeniiq.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_DEPLOYMENT_MODE: operational
+        run: npm run build
+
+      - name: Commit upgrade and remove installer
+        shell: bash
+        run: |
+          rm -f .github/workflows/upgrade-territory-intake.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: capture department, municipality and point project coverage"
+          git push
