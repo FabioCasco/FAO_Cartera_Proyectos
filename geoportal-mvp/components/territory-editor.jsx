@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Building2,
   CircleDot,
+  Info,
   MapPin,
   Plus,
   Shapes,
@@ -17,8 +18,30 @@ const DEPARTMENT_DISPLAY_ALIASES = {
   "Bay Islands": "Islas de la Bahía",
 };
 
+const INTERVENTION_TYPES = [
+  "Asistencia técnica y extensión",
+  "Fortalecimiento institucional y gobernanza",
+  "Producción sostenible y cadenas de valor",
+  "Seguridad alimentaria y nutrición",
+  "Gestión de riesgos y respuesta a emergencias",
+  "Adaptación y resiliencia climática",
+  "Restauración y gestión de recursos naturales",
+  "Infraestructura, equipamiento e insumos",
+  "Información, monitoreo y sistemas digitales",
+  "Inclusión rural, género y protección social",
+  "Investigación, innovación y desarrollo de capacidades",
+];
+
 function departmentDisplay(value) {
   return DEPARTMENT_DISPLAY_ALIASES[value] || value || "";
+}
+
+function interventionSelection(location) {
+  if (location.intervention_option) return location.intervention_option;
+  if (INTERVENTION_TYPES.includes(location.intervention_type)) {
+    return location.intervention_type;
+  }
+  return location.intervention_type ? "__other__" : "";
 }
 
 export function createEmptyLocation() {
@@ -31,6 +54,7 @@ export function createEmptyLocation() {
     location_name: "",
     latitude: null,
     longitude: null,
+    intervention_option: "",
     intervention_type: "",
     notes: "",
   };
@@ -42,7 +66,7 @@ function scopeMeta(scope) {
       icon: Building2,
       label: "Cobertura departamental",
       description:
-        "El proyecto se interpreta con influencia en todo el departamento seleccionado.",
+        "Use esta opción cuando el proyecto tenga una intervención verificable en todo el departamento.",
     };
   }
   if (scope === "municipality") {
@@ -50,14 +74,14 @@ function scopeMeta(scope) {
       icon: Shapes,
       label: "Cobertura municipal",
       description:
-        "El proyecto se representa mediante el polígono completo del municipio seleccionado.",
+        "El Geoportal sombreará el polígono completo del municipio seleccionado.",
     };
   }
   return {
     icon: CircleDot,
     label: "Punto específico",
     description:
-      "Use una coordenada exacta para una oficina, comunidad, infraestructura o sitio de intervención.",
+      "Registre una comunidad, oficina, infraestructura, parcela o sitio de intervención concreto.",
   };
 }
 
@@ -115,7 +139,8 @@ export function TerritoryEditor({ locations, setLocations }) {
 
     updateLocation(index, {
       geometry_type: scope,
-      municipality_code: scope === "department" ? "" : location.municipality_code,
+      municipality_code:
+        scope === "department" ? "" : location.municipality_code,
       municipality: scope === "department" ? "" : location.municipality,
       location_name:
         scope === "department"
@@ -171,6 +196,25 @@ export function TerritoryEditor({ locations, setLocations }) {
     });
   }
 
+  function changeIntervention(index, selection) {
+    if (selection === "__other__") {
+      updateLocation(index, {
+        intervention_option: "__other__",
+        intervention_type: INTERVENTION_TYPES.includes(
+          locations[index].intervention_type,
+        )
+          ? ""
+          : locations[index].intervention_type,
+      });
+      return;
+    }
+
+    updateLocation(index, {
+      intervention_option: selection,
+      intervention_type: selection,
+    });
+  }
+
   function removeLocation(index) {
     setLocations((current) => {
       const next = current.filter((_, rowIndex) => rowIndex !== index);
@@ -179,7 +223,7 @@ export function TerritoryEditor({ locations, setLocations }) {
   }
 
   return (
-    <div className="territory-editor">
+    <div className="territory-editor territory-editor-v2">
       {catalogueError && (
         <div className="form-error territory-catalogue-error">
           <TriangleAlert size={15} /> {catalogueError}
@@ -189,11 +233,10 @@ export function TerritoryEditor({ locations, setLocations }) {
       <div className="territory-guidance">
         <MapPin size={18} />
         <div>
-          <strong>Registre el alcance territorial real</strong>
+          <strong>Seleccione territorios normalizados, no escriba nombres libres</strong>
           <p>
-            Un proyecto puede combinar departamentos completos, municipios y
-            puntos específicos. El Geoportal agregará automáticamente las
-            coincidencias sin duplicar proyectos.
+            Departamento y municipio provienen del catálogo cartográfico. Puede
+            combinar varias coberturas sin duplicar el proyecto en los análisis.
           </p>
         </div>
       </div>
@@ -210,6 +253,7 @@ export function TerritoryEditor({ locations, setLocations }) {
                     departmentDisplay(item.department) === location.department,
                 )?.department_code,
             ) || [];
+          const interventionValue = interventionSelection(location);
 
           return (
             <article className="territory-location-card" key={index}>
@@ -271,7 +315,8 @@ export function TerritoryEditor({ locations, setLocations }) {
                 {location.geometry_type !== "department" && (
                   <label className="field">
                     <span>
-                      Municipio{location.geometry_type === "municipality" ? " *" : ""}
+                      Municipio
+                      {location.geometry_type === "municipality" ? " *" : ""}
                     </span>
                     <select
                       disabled={!location.department_code}
@@ -293,77 +338,124 @@ export function TerritoryEditor({ locations, setLocations }) {
                   </label>
                 )}
 
-                <label className="field">
-                  <span>Tipo de intervención</span>
-                  <input
+                <label className="field territory-intervention-field">
+                  <span>Intervención principal</span>
+                  <select
                     onChange={(event) =>
-                      updateLocation(index, {
-                        intervention_type: event.target.value,
-                      })
+                      changeIntervention(index, event.target.value)
                     }
-                    placeholder="Ej. restauración, asistencia técnica, nutrición"
-                    value={location.intervention_type}
-                  />
+                    value={interventionValue}
+                  >
+                    <option value="">Seleccione una categoría</option>
+                    {INTERVENTION_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                    <option value="__other__">Otra intervención</option>
+                  </select>
+                  <small>
+                    Esta categoría permitirá filtrar y resumir las acciones en
+                    el Geoportal.
+                  </small>
                 </label>
 
-                <label className="field">
-                  <span>Nombre de referencia</span>
-                  <input
-                    onChange={(event) =>
-                      updateLocation(index, { location_name: event.target.value })
-                    }
-                    placeholder="Comunidad, paisaje, oficina o sitio"
-                    value={location.location_name}
-                  />
-                </label>
+                {interventionValue === "__other__" && (
+                  <label className="field">
+                    <span>Especifique la intervención</span>
+                    <input
+                      onChange={(event) =>
+                        updateLocation(index, {
+                          intervention_option: "__other__",
+                          intervention_type: event.target.value,
+                        })
+                      }
+                      placeholder="Describa una categoría breve y consistente"
+                      value={location.intervention_type}
+                    />
+                  </label>
+                )}
 
-                <label className="field field--wide">
-                  <span>Notas territoriales</span>
+                {location.geometry_type === "point" && (
+                  <label className="field">
+                    <span>Nombre del sitio *</span>
+                    <input
+                      onChange={(event) =>
+                        updateLocation(index, {
+                          location_name: event.target.value,
+                        })
+                      }
+                      placeholder="Comunidad, oficina, parcela o infraestructura"
+                      value={location.location_name}
+                    />
+                  </label>
+                )}
+
+                <label className="field field--wide territory-notes-field">
+                  <span>Detalle territorial <em>opcional</em></span>
                   <textarea
                     onChange={(event) =>
                       updateLocation(index, { notes: event.target.value })
                     }
-                    placeholder="Describa alcance, intensidad o población atendida en este territorio."
+                    placeholder="Añada únicamente información útil: población, intensidad, alcance o particularidades del territorio."
                     value={location.notes}
                   />
                 </label>
               </div>
 
               {location.geometry_type === "point" ? (
-                <div className="territory-point-layout">
+                <div className="territory-point-layout territory-point-layout-v2">
                   <LocationPicker
                     onChange={(coordinates) =>
                       updateLocation(index, coordinates)
                     }
                     value={location}
                   />
-                  <div className="form-grid territory-coordinate-grid">
-                    <label className="field">
-                      <span>Latitud</span>
-                      <input
-                        onChange={(event) =>
-                          updateLocation(index, {
-                            latitude: event.target.value,
-                          })
-                        }
-                        step="any"
-                        type="number"
-                        value={location.latitude ?? ""}
-                      />
-                    </label>
-                    <label className="field">
-                      <span>Longitud</span>
-                      <input
-                        onChange={(event) =>
-                          updateLocation(index, {
-                            longitude: event.target.value,
-                          })
-                        }
-                        step="any"
-                        type="number"
-                        value={location.longitude ?? ""}
-                      />
-                    </label>
+                  <div className="territory-coordinate-panel">
+                    <div className="territory-coordinate-heading">
+                      <CircleDot size={16} />
+                      <div>
+                        <strong>Coordenada del sitio</strong>
+                        <span>
+                          Puede elegir el punto en el mapa o escribir los valores.
+                        </span>
+                      </div>
+                    </div>
+                    <div className="form-grid territory-coordinate-grid">
+                      <label className="field">
+                        <span>Latitud</span>
+                        <input
+                          onChange={(event) =>
+                            updateLocation(index, {
+                              latitude: event.target.value,
+                            })
+                          }
+                          step="any"
+                          type="number"
+                          value={location.latitude ?? ""}
+                        />
+                      </label>
+                      <label className="field">
+                        <span>Longitud</span>
+                        <input
+                          onChange={(event) =>
+                            updateLocation(index, {
+                              longitude: event.target.value,
+                            })
+                          }
+                          step="any"
+                          type="number"
+                          value={location.longitude ?? ""}
+                        />
+                      </label>
+                    </div>
+                    <div className="territory-coordinate-note">
+                      <Info size={14} />
+                      <span>
+                        La coordenada representa el sitio seleccionado; no implica
+                        que toda la inversión del proyecto se concentre allí.
+                      </span>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -376,9 +468,8 @@ export function TerritoryEditor({ locations, setLocations }) {
                         : location.municipality || "Seleccione un municipio"}
                     </strong>
                     <span>
-                      Se utilizará el límite administrativo completo dentro del
-                      Geoportal. La coordenada almacenada funciona únicamente
-                      como punto de referencia cartográfico.
+                      El Geoportal utilizará el límite administrativo completo.
+                      La coordenada representativa se calcula automáticamente.
                     </span>
                   </div>
                 </div>
