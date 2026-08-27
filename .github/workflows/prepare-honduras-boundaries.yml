@@ -1,0 +1,202 @@
+name: Prepare Honduras Administrative Boundaries
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install geometry tooling
+        run: python -m pip install --disable-pip-version-check --no-cache-dir shapely==2.1.2
+
+      - name: Download and prepare web boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p geoportal-mvp/public/data
+          curl -L --fail --retry 3 \
+            "https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/9469f09592ced973a3448cf66b6100b741b64c0d/releaseData/gbOpen/HND/ADM1/geoBoundaries-HND-ADM1_simplified.geojson" \
+            -o /tmp/hnd-adm1-source.geojson
+          curl -L --fail --retry 3 \
+            "https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/905b0baf5f4fb3b9ccf45293647dcacdb2b799d4/releaseData/gbOpen/HND/ADM2/geoBoundaries-HND-ADM2_simplified.geojson" \
+            -o /tmp/hnd-adm2-source.geojson
+
+          python <<'PY'
+          import json
+          import re
+          import unicodedata
+          from pathlib import Path
+          from shapely.geometry import shape, mapping
+          from shapely.prepared import prep
+
+          out_dir = Path("geoportal-mvp/public/data")
+
+          def load(path):
+              with open(path, "r", encoding="utf-8") as handle:
+                  return json.load(handle)
+
+          def key(value):
+              text = unicodedata.normalize("NFKD", str(value or ""))
+              text = "".join(ch for ch in text if not unicodedata.combining(ch))
+              return re.sub(r"[^a-z0-9]+", "", text.lower())
+
+          def source_name(feature):
+              properties = feature.get("properties") or {}
+              for field in ("shapeName", "NAME_1", "NAME_2", "name", "NAME"):
+                  if properties.get(field):
+                      return str(properties[field]).strip()
+              return "Sin nombre"
+
+          def source_code(feature, fallback):
+              properties = feature.get("properties") or {}
+              for field in ("shapeID", "shapeISO", "GID_1", "GID_2", "id"):
+                  if properties.get(field):
+                      return str(properties[field]).strip()
+              return fallback
+
+          def round_coords(value, digits=5):
+              if isinstance(value, (list, tuple)):
+                  if value and isinstance(value[0], (int, float)):
+                      return [round(float(item), digits) for item in value]
+                  return [round_coords(item, digits) for item in value]
+              return value
+
+          adm1_source = load("/tmp/hnd-adm1-source.geojson")
+          adm2_source = load("/tmp/hnd-adm2-source.geojson")
+
+          departments = []
+          department_shapes = []
+          for index, feature in enumerate(adm1_source.get("features", []), start=1):
+              geometry = shape(feature["geometry"]).buffer(0).simplify(0.0025, preserve_topology=True)
+              name = source_name(feature)
+              code = source_code(feature, f"HND-ADM1-{index:02d}")
+              centroid = geometry.representative_point()
+              properties = {
+                  "admin_level": 1,
+                  "department_code": code,
+                  "department": name,
+                  "department_key": key(name),
+                  "centroid_lat": round(centroid.y, 5),
+                  "centroid_lon": round(centroid.x, 5),
+              }
+              departments.append({
+                  "type": "Feature",
+                  "id": code,
+                  "properties": properties,
+                  "geometry": {
+                      **mapping(geometry),
+                      "coordinates": round_coords(mapping(geometry)["coordinates"]),
+                  },
+              })
+              department_shapes.append((properties, geometry, prep(geometry)))
+
+          municipalities = []
+          municipality_index = []
+          for index, feature in enumerate(adm2_source.get("features", []), start=1):
+              geometry = shape(feature["geometry"]).buffer(0).simplify(0.0018, preserve_topology=True)
+              name = source_name(feature)
+              code = source_code(feature, f"HND-ADM2-{index:03d}")
+              point = geometry.representative_point()
+
+              department = None
+              for department_properties, department_geometry, prepared in department_shapes:
+                  if prepared.contains(point) or department_geometry.intersects(geometry):
+                      department = department_properties
+                      break
+              if department is None:
+                  department = {
+                      "department_code": "",
+                      "department": "Sin asignar",
+                      "department_key": "sinasignar",
+                  }
+
+              properties = {
+                  "admin_level": 2,
+                  "municipality_code": code,
+                  "municipality": name,
+                  "municipality_key": key(name),
+                  "department_code": department["department_code"],
+                  "department": department["department"],
+                  "department_key": department["department_key"],
+                  "join_key": f"{department['department_key']}|{key(name)}",
+                  "centroid_lat": round(point.y, 5),
+                  "centroid_lon": round(point.x, 5),
+              }
+              municipalities.append({
+                  "type": "Feature",
+                  "id": code,
+                  "properties": properties,
+                  "geometry": {
+                      **mapping(geometry),
+                      "coordinates": round_coords(mapping(geometry)["coordinates"]),
+                  },
+              })
+              municipality_index.append(properties)
+
+          departments.sort(key=lambda item: item["properties"]["department"])
+          municipalities.sort(key=lambda item: (
+              item["properties"]["department"],
+              item["properties"]["municipality"],
+          ))
+          municipality_index.sort(key=lambda item: (item["department"], item["municipality"]))
+
+          adm1_output = {
+              "type": "FeatureCollection",
+              "name": "Honduras departments",
+              "source": "geoBoundaries gbOpen HND ADM1; source OpenStreetMap/Wambacher; ODbL 1.0",
+              "features": departments,
+          }
+          adm2_output = {
+              "type": "FeatureCollection",
+              "name": "Honduras municipalities",
+              "source": "geoBoundaries gbOpen HND ADM2; source ICF Honduras; CC BY 4.0",
+              "features": municipalities,
+          }
+          index_output = {
+              "source": "geoBoundaries gbOpen",
+              "departments": [item["properties"] for item in departments],
+              "municipalities": municipality_index,
+          }
+
+          with open(out_dir / "hnd-adm1.geojson", "w", encoding="utf-8") as handle:
+              json.dump(adm1_output, handle, ensure_ascii=False, separators=(",", ":"))
+          with open(out_dir / "hnd-adm2.geojson", "w", encoding="utf-8") as handle:
+              json.dump(adm2_output, handle, ensure_ascii=False, separators=(",", ":"))
+          with open(out_dir / "hnd-admin-index.json", "w", encoding="utf-8") as handle:
+              json.dump(index_output, handle, ensure_ascii=False, separators=(",", ":"))
+
+          print(f"ADM1 features: {len(departments)}")
+          print(f"ADM2 features: {len(municipalities)}")
+          for path in sorted(out_dir.glob("hnd-*")):
+              print(path, path.stat().st_size)
+          PY
+
+      - name: Commit boundary assets
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add geoportal-mvp/public/data/hnd-adm1.geojson \
+                  geoportal-mvp/public/data/hnd-adm2.geojson \
+                  geoportal-mvp/public/data/hnd-admin-index.json
+          if git diff --cached --quiet; then
+            echo "Boundary assets are already current."
+            exit 0
+          fi
+          git commit -m "data: add local Honduras department and municipality boundaries"
+          git push
