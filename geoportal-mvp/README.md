@@ -1,40 +1,37 @@
-# Geoportal de Proyectos FAO Honduras · MVP
+# Geoportal de Proyectos FAO Honduras · MVP operativo 0.2
 
-Aplicación web para organizar, visualizar y monitorear la cartera de proyectos desde una arquitectura común de programas, recursos, resultados, equipos y territorio.
+Aplicación protegida para organizar, visualizar y monitorear la cartera de proyectos de FAO Honduras.
 
-## Incluye
+## Funciones
 
-- Centro de mando ejecutivo.
-- Cuatro Mejoras: Producción, Nutrición, Ambiente y Vida.
-- Presupuesto, gasto, compromisos, ejecución y avance físico.
-- Explorador de cartera con búsqueda y filtros.
-- Geoportal oscuro de Honduras con límites municipales y convergencias.
-- Ficha Proyecto 360°.
-- Matriz de resultados e indicadores.
-- Registro progresivo de proyectos.
-- Captura de coordenadas mediante mapa.
-- Carga de fotografías y documentos a Supabase Storage.
-- Cortes periódicos que conservan el historial.
-- Modo demostrativo local cuando faltan las variables de Supabase.
+- Supabase Auth con sesión persistente.
+- Operadores autorizados mediante RLS.
+- Dashboard y cartera conectados a PostgreSQL.
+- Alta transaccional de proyectos.
+- Cortes técnicos y financieros históricos.
+- Marco lógico, componentes, indicadores y RRHH.
+- Geoportal con convergencias territoriales.
+- Evidencias en Supabase Storage privado.
+- Eliminación lógica de proyectos no DEMO.
 
-## Ejecutar
+## Desarrollo local
 
 ```bash
-npm install
+npm ci
 cp .env.example .env.local
 npm run dev
 ```
 
-Abra `http://localhost:3000`.
+Variables:
 
-## Backend conectado
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://xweafcknhbaxpnfeniiq.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+NEXT_PUBLIC_DEPLOYMENT_MODE=operational
+```
 
-La instancia inicial utiliza el proyecto Supabase `Geoportal`. Configure en `.env.local` la URL y una clave publicable. Nunca coloque una clave `service_role` en variables `NEXT_PUBLIC_*`.
+Nunca utilice una `service_role` o secret key en variables `NEXT_PUBLIC_*`.
 
-## Seguridad
+## Base de datos
 
-Por decisión de alcance, esta primera versión no incorpora autenticación ni roles. Las políticas de escritura abiertas existen únicamente para probar el flujo funcional. **No cargue datos oficiales, personales, contractuales o sensibles** hasta implementar autenticación, permisos y políticas RLS restrictivas.
-
-## Datos demostrativos
-
-Los proyectos y cifras iniciales están marcados como `DEMO`; no representan información oficial de FAO Honduras.
+Aplique las migraciones de `supabase/migrations` en orden. La migración operacional añade autorización, auditoría, almacenamiento privado y eliminación lógica.

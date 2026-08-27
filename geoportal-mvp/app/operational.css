@@ -1,0 +1,614 @@
+/* Operational authentication, project management and map resilience layer. */
+
+.auth-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 18px;
+  background:
+    radial-gradient(circle at 70% 0%, rgba(75, 151, 174, 0.14), transparent 36%),
+    radial-gradient(circle at 10% 100%, rgba(106, 207, 216, 0.08), transparent 30%),
+    #070b10;
+}
+
+.auth-card {
+  width: min(510px, 100%);
+  padding: 30px;
+  border: 1px solid #263845;
+  border-radius: 24px;
+  background: linear-gradient(145deg, rgba(15, 24, 33, 0.98), rgba(8, 14, 20, 0.98));
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45), inset 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.auth-card--status {
+  text-align: center;
+  display: grid;
+  justify-items: center;
+  gap: 13px;
+}
+
+.auth-card--status h1,
+.auth-heading h1 {
+  margin: 5px 0 8px;
+  font-size: clamp(30px, 5vw, 46px);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.auth-card--status p,
+.auth-heading p {
+  margin: 0;
+  color: #91a1ad;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 22px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.auth-brand img {
+  border-radius: 17px;
+}
+
+.auth-brand div {
+  display: grid;
+  gap: 4px;
+}
+
+.auth-brand strong {
+  font-size: 15px;
+}
+
+.auth-brand span {
+  color: #8294a1;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.auth-heading {
+  margin-bottom: 23px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-submit {
+  width: 100%;
+  margin-top: 3px;
+}
+
+.auth-trust-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.auth-trust-grid div {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  padding: 10px 5px;
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  border-radius: 11px;
+  color: #7f94a2;
+  text-align: center;
+}
+
+.auth-trust-grid svg {
+  color: #69cfd8;
+}
+
+.auth-trust-grid span {
+  font-size: 8px;
+}
+
+.auth-status-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.spin {
+  animation: operational-spin 1s linear infinite;
+}
+
+@keyframes operational-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.pilot-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid rgba(105, 207, 216, 0.22);
+  border-radius: 999px;
+  background: rgba(105, 207, 216, 0.06);
+  color: #a9dce1;
+  font-size: 8px;
+  letter-spacing: 0.11em;
+}
+
+.account-menu {
+  position: relative;
+}
+
+.account-trigger {
+  max-width: 245px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px;
+  border: 1px solid #2a3a47;
+  border-radius: 10px;
+  background: #0b131a;
+  color: #b8c5cd;
+  cursor: pointer;
+}
+
+.account-trigger span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9px;
+}
+
+.account-popover {
+  position: absolute;
+  top: calc(100% + 9px);
+  right: 0;
+  z-index: 80;
+  width: 280px;
+  display: grid;
+  gap: 8px;
+  padding: 15px;
+  border: 1px solid #2d3f4c;
+  border-radius: 14px;
+  background: rgba(9, 16, 22, 0.98);
+  box-shadow: 0 22px 65px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(18px);
+}
+
+.account-popover strong {
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+
+.account-popover small {
+  color: #7e909c;
+  font-size: 9px;
+}
+
+.account-popover > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 37px;
+  margin-top: 5px;
+  border: 1px solid #344654;
+  border-radius: 9px;
+  background: #121d25;
+  color: #d4dde2;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.sidebar-status--connected .status-dot {
+  background: #72d6c9;
+}
+
+.sidebar-status--checking .status-dot {
+  background: #e5b86b;
+}
+
+.sidebar-status--error .status-dot {
+  background: #e77c7c;
+}
+
+.sidebar-status small {
+  line-height: 1.4;
+}
+
+.operational-error {
+  margin: 0;
+}
+
+.project-card--managed {
+  padding: 0;
+  overflow: hidden;
+}
+
+.project-card--managed:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--accent) 42%, #263642);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.22);
+}
+
+.project-card-content {
+  display: block;
+  min-height: 310px;
+  padding: 20px;
+}
+
+.project-delete-button {
+  position: absolute;
+  right: 17px;
+  bottom: 16px;
+  z-index: 3;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(231, 124, 124, 0.25);
+  border-radius: 10px;
+  background: rgba(231, 124, 124, 0.07);
+  color: #e99393;
+  cursor: pointer;
+  opacity: 0.72;
+  transition: 0.2s ease;
+}
+
+.project-delete-button:hover {
+  opacity: 1;
+  border-color: rgba(231, 124, 124, 0.52);
+  background: rgba(231, 124, 124, 0.13);
+}
+
+.project-protected-tag {
+  position: absolute;
+  right: 17px;
+  bottom: 17px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #718592;
+  font-size: 8px;
+}
+
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.table-action-link,
+.table-actions button {
+  min-height: 29px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  border: 1px solid #2a3b48;
+  border-radius: 8px;
+  background: #0e171e;
+  color: #aebbc4;
+  cursor: pointer;
+  font-size: 8px;
+}
+
+.table-actions button {
+  color: #e49393;
+  border-color: rgba(231, 124, 124, 0.22);
+}
+
+.project-management-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 14px;
+  border: 1px solid #263844;
+  border-radius: 13px;
+  background: linear-gradient(90deg, rgba(105, 207, 216, 0.055), rgba(11, 18, 24, 0.94));
+}
+
+.project-management-bar > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #8fa3af;
+  font-size: 9px;
+}
+
+.project-management-bar svg {
+  color: #69cfd8;
+}
+
+.danger-button {
+  min-height: 41px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid rgba(231, 124, 124, 0.34);
+  border-radius: 11px;
+  background: rgba(231, 124, 124, 0.1);
+  color: #f0a2a2;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.danger-button:hover:not(:disabled) {
+  background: rgba(231, 124, 124, 0.17);
+}
+
+.danger-button:disabled {
+  opacity: 0.36;
+  cursor: not-allowed;
+}
+
+.danger-button--quiet {
+  min-height: 34px;
+  background: transparent;
+}
+
+.delete-dialog-backdrop {
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.delete-dialog {
+  position: relative;
+  width: min(520px, 100%);
+  padding: 25px;
+  border: 1px solid rgba(231, 124, 124, 0.28);
+  border-radius: 20px;
+  background: #0b1218;
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.58);
+}
+
+.delete-dialog-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #7e8f9b;
+  cursor: pointer;
+}
+
+.delete-dialog-icon {
+  width: 47px;
+  height: 47px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 15px;
+  border: 1px solid rgba(231, 124, 124, 0.28);
+  border-radius: 14px;
+  background: rgba(231, 124, 124, 0.08);
+  color: #ed9696;
+}
+
+.delete-dialog h2 {
+  margin: 7px 0 9px;
+  font-size: 23px;
+  letter-spacing: -0.035em;
+}
+
+.delete-dialog > p {
+  margin: 0 0 18px;
+  color: #91a0aa;
+  font-size: 10px;
+  line-height: 1.65;
+}
+
+.delete-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 18px;
+}
+
+.map-health {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 5;
+  max-width: min(520px, calc(100% - 100px));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 10px;
+  background: rgba(8, 14, 19, 0.86);
+  color: #9fb0bb;
+  backdrop-filter: blur(12px);
+  font-size: 8px;
+}
+
+.map-health button {
+  margin-left: 6px;
+  border: 0;
+  background: transparent;
+  color: #a8dbe0;
+  cursor: pointer;
+  font-size: 8px;
+  text-decoration: underline;
+}
+
+.map-health--fallback {
+  border-color: rgba(229, 184, 107, 0.3);
+  color: #d9bd87;
+}
+
+.geo-dom-marker {
+  width: 29px;
+  height: 29px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid #edf6f8;
+  border-radius: 50%;
+  color: #071016;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+  box-shadow: 0 0 0 8px rgba(105, 207, 216, 0.12), 0 8px 20px rgba(0, 0, 0, 0.38);
+  transition: transform 0.18s ease;
+}
+
+.geo-dom-marker:hover {
+  transform: scale(1.16);
+}
+
+.geo-dom-marker--one {
+  background: #72d6c9;
+}
+
+.geo-dom-marker--two {
+  width: 34px;
+  height: 34px;
+  background: #e5b86b;
+  box-shadow: 0 0 0 9px rgba(229, 184, 107, 0.13), 0 8px 20px rgba(0, 0, 0, 0.38);
+}
+
+.geo-dom-marker--three {
+  width: 39px;
+  height: 39px;
+  background: #e77c7c;
+  box-shadow: 0 0 0 10px rgba(231, 124, 124, 0.13), 0 8px 20px rgba(0, 0, 0, 0.38);
+}
+
+.fallback-map {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #081017;
+}
+
+.fallback-map svg {
+  width: 100%;
+  height: 100%;
+}
+
+.fallback-map-label {
+  position: absolute;
+  right: 15px;
+  bottom: 15px;
+  padding: 8px 10px;
+  border: 1px solid rgba(229, 184, 107, 0.2);
+  border-radius: 9px;
+  background: rgba(8, 14, 19, 0.85);
+  color: #bda66f;
+  font-size: 8px;
+}
+
+.fallback-marker {
+  cursor: pointer;
+}
+
+.fallback-marker circle {
+  stroke: #e9f3f6;
+  stroke-width: 2;
+  transition: 0.18s ease;
+}
+
+.fallback-marker:hover circle {
+  stroke-width: 4;
+}
+
+.fallback-marker text {
+  fill: #061016;
+  font-size: 13px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.fallback-marker--one circle {
+  fill: #72d6c9;
+}
+
+.fallback-marker--two circle {
+  fill: #e5b86b;
+}
+
+.fallback-marker--three circle {
+  fill: #e77c7c;
+}
+
+.map-detail > small {
+  display: block;
+  margin: 0 0 12px;
+  color: #7d909d;
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .pilot-chip {
+    display: none;
+  }
+
+  .account-trigger span {
+    max-width: 120px;
+  }
+
+  .project-management-bar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 620px) {
+  .auth-card {
+    padding: 23px 18px;
+  }
+
+  .auth-trust-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-trigger span {
+    display: none;
+  }
+
+  .account-popover {
+    position: fixed;
+    top: 67px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+
+  .delete-dialog-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .danger-button,
+  .delete-dialog-actions .secondary-button {
+    width: 100%;
+  }
+}

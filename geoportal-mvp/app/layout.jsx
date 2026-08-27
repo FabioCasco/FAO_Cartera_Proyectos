@@ -1,17 +1,24 @@
 import "./globals.css";
+import "./operational.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { AppShell } from "@/components/app-shell";
+import { AuthProvider, OperationalGate } from "@/components/auth-provider";
 
 export const metadata = {
   title: "Geoportal de Proyectos | FAO Honduras",
-  description: "MVP para inteligencia, monitoreo y visualización territorial de la cartera de proyectos.",
+  description:
+    "Sistema protegido para inteligencia, monitoreo y visualización territorial de la cartera de proyectos de FAO Honduras.",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="es">
       <body>
-        <AppShell>{children}</AppShell>
+        <AuthProvider>
+          <OperationalGate>
+            <AppShell>{children}</AppShell>
+          </OperationalGate>
+        </AuthProvider>
       </body>
     </html>
   );
