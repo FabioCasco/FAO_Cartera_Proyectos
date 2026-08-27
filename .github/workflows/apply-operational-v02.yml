@@ -32,6 +32,55 @@ jobs:
           echo "edb24b68eff582bad4765c36072c9a7b377498c8be51821bc9337033520f25e1  /tmp/operational-overlay.tar.gz" | sha256sum --check
           tar -xzf /tmp/operational-overlay.tar.gz -C .
 
+      - name: Normalize React 19 lint-safe effects
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          auth_path = Path("geoportal-mvp/components/auth-provider.jsx")
+          auth = auth_path.read_text()
+          old_state = '  const [initializing, setInitializing] = useState(true);'
+          new_state = '  const [initializing, setInitializing] = useState(Boolean(supabase));'
+          old_branch = '''    if (!supabase) {
+                setInitializing(false);
+                return undefined;
+              }
+          '''
+          new_branch = '    if (!supabase) return undefined;\n'
+          if old_state not in auth:
+              raise SystemExit("Auth initializing state pattern not found")
+          if old_branch not in auth:
+              raise SystemExit("Auth no-Supabase effect branch not found")
+          auth = auth.replace(old_state, new_state, 1)
+          auth = auth.replace(old_branch, new_branch, 1)
+          auth_path.write_text(auth)
+
+          map_path = Path("geoportal-mvp/components/geoportal-map.jsx")
+          map_text = map_path.read_text()
+          old_map = '''    if (!maplibregl.supported()) {
+                setMapStatus("fallback");
+                setMapMessage(
+                  "El navegador no habilitó WebGL. Se muestra una vista territorial de respaldo.",
+                );
+                return;
+              }
+          '''
+          new_map = '''    if (!maplibregl.supported()) {
+                const fallbackTimer = window.setTimeout(() => {
+                  setMapStatus("fallback");
+                  setMapMessage(
+                    "El navegador no habilitó WebGL. Se muestra una vista territorial de respaldo.",
+                  );
+                }, 0);
+                return () => window.clearTimeout(fallbackTimer);
+              }
+          '''
+          if old_map not in map_text:
+              raise SystemExit("MapLibre fallback effect branch not found")
+          map_path.write_text(map_text.replace(old_map, new_map, 1))
+          PY
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
