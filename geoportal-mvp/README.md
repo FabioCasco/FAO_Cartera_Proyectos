@@ -35,3 +35,7 @@ Nunca utilice una `service_role` o secret key en variables `NEXT_PUBLIC_*`.
 ## Base de datos
 
 Aplique las migraciones de `supabase/migrations` en orden. La migración operacional añade autorización, auditoría, almacenamiento privado y eliminación lógica.
+
+## Publicación
+
+La versión operativa se compila y publica automáticamente en GitHub Pages mediante el workflow `Deploy Geoportal to GitHub Pages`.
