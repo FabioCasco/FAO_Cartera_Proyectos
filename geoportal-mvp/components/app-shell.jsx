@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
+import { useRouteScrollRestoration } from "@/lib/persistent-state";
 
 const publicBasePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
@@ -35,12 +36,21 @@ function isActive(pathname, href) {
   return pathname.startsWith(href);
 }
 
+function connectionTitle(connection) {
+  if (connection === "connected") return "FAO-HN-GeoHub conectado";
+  if (connection === "degraded") return "Sesión activa · conexión inestable";
+  if (connection === "error") return "Supabase requiere atención";
+  return "Verificando Supabase";
+}
+
 export function AppShell({ children }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [signOutError, setSignOutError] = useState("");
   const { user, connection, connectionMessage, signOut } = useAuth();
+
+  useRouteScrollRestoration(pathname);
 
   async function handleSignOut() {
     setSignOutError("");
@@ -69,6 +79,7 @@ export function AppShell({ children }) {
             className="icon-button sidebar-close"
             onClick={() => setOpen(false)}
             aria-label="Cerrar"
+            type="button"
           >
             <X size={18} />
           </button>
@@ -96,11 +107,7 @@ export function AppShell({ children }) {
         <div className={`sidebar-status sidebar-status--${connection}`}>
           <span className="status-dot" />
           <div>
-            <strong>
-              {connection === "connected"
-                ? "FAO-HN-GeoHub conectado"
-                : "Verificando Supabase"}
-            </strong>
+            <strong>{connectionTitle(connection)}</strong>
             <small>{connectionMessage}</small>
           </div>
         </div>
@@ -112,6 +119,7 @@ export function AppShell({ children }) {
             className="icon-button mobile-menu"
             onClick={() => setOpen(true)}
             aria-label="Menú"
+            type="button"
           >
             <Menu size={20} />
           </button>
@@ -159,6 +167,7 @@ export function AppShell({ children }) {
           className="backdrop"
           onClick={() => setOpen(false)}
           aria-label="Cerrar menú"
+          type="button"
         />
       )}
     </div>
