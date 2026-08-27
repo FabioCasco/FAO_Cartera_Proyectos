@@ -49,7 +49,6 @@ jobs:
         run: |
           python <<'PY'
           from pathlib import Path
-          import re
 
           root = Path("geoportal-mvp")
 
@@ -88,9 +87,11 @@ jobs:
           dynamic_route = root / "app" / "projects" / "[id]"
           if dynamic_route.exists():
             for child in dynamic_route.rglob("*"):
-              if child.is_file(): child.unlink()
+              if child.is_file():
+                child.unlink()
             for child in sorted(dynamic_route.rglob("*"), reverse=True):
-              if child.is_dir(): child.rmdir()
+              if child.is_dir():
+                child.rmdir()
             dynamic_route.rmdir()
 
           static_route = root / "app" / "project"
@@ -132,6 +133,56 @@ jobs:
           text = text.replace("if (!sb) return true;", 'if (!sb || process.env.NEXT_PUBLIC_DEPLOYMENT_MODE === "public-demo") return true;')
           data_file.write_text(text)
 
+          # Fix dashboard ordering expression.
+          dashboard = root / "components" / "dashboard.jsx"
+          text = dashboard.read_text()
+          bad_alerts = '  const alerts = [...data.projects].filter((p) => ["attention", "critical", "closing"].includes(p.status)).sort((a, b) => ({ critical: 0, attention: 1, closing: 2 }[a.status] - ({ critical: 0, attention: 1, closing: 2 }[b.status])).slice(0, 4);'
+          good_alerts = '  const alertOrder = { critical: 0, attention: 1, closing: 2 };\n  const alerts = [...data.projects].filter((p) => ["attention", "critical", "closing"].includes(p.status)).sort((a, b) => (alertOrder[a.status] ?? 99) - (alertOrder[b.status] ?? 99)).slice(0, 4);'
+          if bad_alerts not in text:
+            raise SystemExit("Dashboard alert expression was not found")
+          dashboard.write_text(text.replace(bad_alerts, good_alerts, 1))
+
+          # Keep time-derived state pure and initialize update fields on user action.
+          project_360 = root / "components" / "project-360.jsx"
+          text = project_360.read_text()
+          old_data_state = '  const [data, setData] = useState(null); const [tab, setTab] = useState("Resumen"); const [updateOpen, setUpdateOpen] = useState(false); const [saving, setSaving] = useState(false); const [message, setMessage] = useState("");'
+          new_data_state = old_data_state + '\n  const [now, setNow] = useState(null);'
+          old_fetch = '  useEffect(() => { getProject(id).then(setData); }, [id]);'
+          new_fetch = old_fetch + '\n  useEffect(() => { const timer = window.setTimeout(() => setNow(Date.now()), 0); return () => window.clearTimeout(timer); }, []);'
+          old_time = '  const timeProgress = useMemo(() => { if (!p) return 0; const start = new Date(p.start_date).getTime(); const end = new Date(p.end_date).getTime(); return Math.max(0, Math.min(100, (Date.now() - start) / (end - start) * 100)); }, [p]);'
+          new_time = '  const timeProgress = useMemo(() => { if (!p || !now) return 0; const start = new Date(p.start_date).getTime(); const end = new Date(p.end_date).getTime(); return Math.max(0, Math.min(100, (now - start) / (end - start) * 100)); }, [p, now]);'
+          old_form_effect = '  useEffect(() => { if (p) setForm((v) => ({ ...v, expenditure_amount: p.spent || 0, commitments_amount: p.commitments || 0, physical_progress_pct: p.physical_progress_pct || 0, status: p.status || "active" })); }, [p]);\n'
+          open_update = '''  function openUpdate() {
+            setMessage("");
+            setForm((current) => ({
+              ...current,
+              expenditure_amount: p?.spent || 0,
+              commitments_amount: p?.commitments || 0,
+              physical_progress_pct: p?.physical_progress_pct || 0,
+              status: p?.status || "active",
+            }));
+            setUpdateOpen(true);
+          }
+'''
+          replacements = [(old_data_state, new_data_state), (old_fetch, new_fetch), (old_time, new_time)]
+          for old, new in replacements:
+            if old not in text:
+              raise SystemExit(f"Project 360 pattern not found: {old[:50]}")
+            text = text.replace(old, new, 1)
+          if old_form_effect not in text:
+            raise SystemExit("Project 360 form effect was not found")
+          text = text.replace(old_form_effect, open_update, 1)
+          text = text.replace('onClick={() => setUpdateOpen(true)}', 'onClick={openUpdate}', 1)
+          project_360.write_text(text)
+
+          # Budget is already normalized on submit; remove redundant synchronous effect.
+          project_form = root / "components" / "project-form.jsx"
+          text = project_form.read_text()
+          old_budget_effect = '  useEffect(() => { setFinancial((v) => ({ ...v, budget_amount: Number(project.budget_total || 0) })); }, [project.budget_total]);\n'
+          if old_budget_effect not in text:
+            raise SystemExit("Project form budget effect was not found")
+          project_form.write_text(text.replace(old_budget_effect, '', 1))
+
           # Keep example variables generic; real public values are injected only by Actions.
           env_example = root / ".env.example"
           if env_example.exists():
@@ -140,7 +191,6 @@ jobs:
           NEXT_PUBLIC_HONDURAS_ADM2_GEOJSON_URL=https://raw.githubusercontent.com/wmgeolab/geoBoundaries/main/releaseData/gbOpen/HND/ADM2/geoBoundaries-HND-ADM2_simplified.geojson
           NEXT_PUBLIC_DEPLOYMENT_MODE=local
           ''')
-
           PY
 
       - name: Setup Node.js
