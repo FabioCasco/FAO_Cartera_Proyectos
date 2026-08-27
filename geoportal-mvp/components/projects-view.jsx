@@ -17,14 +17,20 @@ import { DeleteProjectDialog } from "@/components/delete-project-dialog";
 import { EditProjectDialog } from "@/components/edit-project-dialog";
 import { getAreas, getProjects } from "@/lib/data";
 import { date, money, percent, statusLabel } from "@/lib/format";
+import { usePersistentState } from "@/lib/persistent-state";
+
+const FILTER_PREFIX = "fao-hn-geohub:portfolio:v2";
 
 export function ProjectsView() {
   const [projects, setProjects] = useState([]);
   const [areas, setAreas] = useState([]);
-  const [query, setQuery] = useState("");
-  const [area, setArea] = useState("all");
-  const [status, setStatus] = useState("all");
-  const [view, setView] = useState("grid");
+  const [query, setQuery] = usePersistentState(`${FILTER_PREFIX}:query`, "");
+  const [area, setArea] = usePersistentState(`${FILTER_PREFIX}:area`, "all");
+  const [status, setStatus] = usePersistentState(
+    `${FILTER_PREFIX}:status`,
+    "all",
+  );
+  const [view, setView] = usePersistentState(`${FILTER_PREFIX}:view`, "grid");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editTarget, setEditTarget] = useState(null);
@@ -92,7 +98,8 @@ export function ProjectsView() {
       await refreshProjects();
     } catch (refreshError) {
       setError(
-        refreshError.message || "El proyecto se guardó, pero la cartera no pudo recargarse.",
+        refreshError.message ||
+          "El proyecto se guardó, pero la cartera no pudo recargarse.",
       );
     }
   }
@@ -103,7 +110,8 @@ export function ProjectsView() {
       await refreshProjects();
     } catch (refreshError) {
       setError(
-        refreshError.message || "El proyecto se retiró, pero la cartera no pudo recargarse.",
+        refreshError.message ||
+          "El proyecto se retiró, pero la cartera no pudo recargarse.",
       );
     }
   }
@@ -116,7 +124,7 @@ export function ProjectsView() {
           <h1>Cartera de proyectos</h1>
           <p>
             Explore, filtre, edite, retire y abra la ficha integral de cada
-            intervención.
+            intervención. Sus filtros y tipo de vista se conservan al navegar.
           </p>
         </div>
         <Link href="/projects/new" className="primary-button">
@@ -130,9 +138,8 @@ export function ProjectsView() {
           <div>
             <strong>{demoCount} registros demostrativos activos</strong>
             <p>
-              Ahora puede editarlos o retirarlos para limpiar la cartera. Los
-              proyectos creados con el formulario se guardan directamente en
-              Supabase y también disponen de edición y baja lógica.
+              Puede editarlos o retirarlos para limpiar la cartera. Los proyectos
+              creados con el formulario se guardan directamente en Supabase.
             </p>
           </div>
         </section>
@@ -204,43 +211,43 @@ export function ProjectsView() {
 
           {view === "grid" ? (
             <section className="project-grid">
-              {filtered.map((project) => (
+              {filtered.map((projectItem) => (
                 <article
                   className="project-card project-card--managed"
-                  key={project.id}
+                  key={projectItem.id}
                   style={{
-                    "--accent": project.primary_area_accent || "#69CFD8",
+                    "--accent": projectItem.primary_area_accent || "#69CFD8",
                   }}
                 >
                   <Link
                     className="project-card-content"
-                    href={`/project?id=${project.id}`}
+                    href={`/project?id=${projectItem.id}`}
                   >
                     <div className="project-card-head">
-                      <span className={`status status--${project.status}`}>
-                        {statusLabel[project.status]}
+                      <span className={`status status--${projectItem.status}`}>
+                        {statusLabel[projectItem.status]}
                       </span>
                       <ArrowUpRight size={17} />
                     </div>
-                    <span className="project-code">{project.code}</span>
-                    <h2>{project.acronym || project.title}</h2>
-                    <p>{project.title}</p>
+                    <span className="project-code">{projectItem.code}</span>
+                    <h2>{projectItem.acronym || projectItem.title}</h2>
+                    <p>{projectItem.title}</p>
                     <div className="project-card-kpis">
                       <div>
                         <span>Presupuesto</span>
-                        <strong>{money(project.budget_total)}</strong>
+                        <strong>{money(projectItem.budget_total)}</strong>
                       </div>
                       <div>
                         <span>Ejecución</span>
-                        <strong>{percent(project.execution_pct)}</strong>
+                        <strong>{percent(projectItem.execution_pct)}</strong>
                       </div>
                       <div>
                         <span>Avance</span>
-                        <strong>{percent(project.physical_progress_pct)}</strong>
+                        <strong>{percent(projectItem.physical_progress_pct)}</strong>
                       </div>
                       <div>
                         <span>RRHH</span>
-                        <strong>{project.staff_count || 0}</strong>
+                        <strong>{projectItem.staff_count || 0}</strong>
                       </div>
                     </div>
                     <div className="progress-track">
@@ -248,37 +255,37 @@ export function ProjectsView() {
                         style={{
                           width: `${Math.min(
                             100,
-                            project.physical_progress_pct || 0,
+                            projectItem.physical_progress_pct || 0,
                           )}%`,
                         }}
                       />
                     </div>
                     <div className="project-card-foot">
-                      <span>{project.primary_area_short_name}</span>
+                      <span>{projectItem.primary_area_short_name}</span>
                       <span>
-                        {(project.municipalities || []).length} municipios
+                        {(projectItem.municipalities || []).length} municipios
                       </span>
-                      <span>{date(project.end_date)}</span>
+                      <span>{date(projectItem.end_date)}</span>
                     </div>
                   </Link>
 
-                  {project.is_demo && (
+                  {projectItem.is_demo && (
                     <span className="project-demo-tag">DEMO</span>
                   )}
 
                   <div className="project-admin-actions">
                     <button
-                      aria-label={`Editar ${project.acronym || project.title}`}
-                      onClick={() => setEditTarget(project)}
+                      aria-label={`Editar ${projectItem.acronym || projectItem.title}`}
+                      onClick={() => setEditTarget(projectItem)}
                       title="Editar información principal"
                       type="button"
                     >
                       <PencilLine size={15} />
                     </button>
                     <button
-                      aria-label={`Retirar ${project.acronym || project.title}`}
+                      aria-label={`Retirar ${projectItem.acronym || projectItem.title}`}
                       className="project-admin-delete"
-                      onClick={() => setDeleteTarget(project)}
+                      onClick={() => setDeleteTarget(projectItem)}
                       title="Retirar de la cartera"
                       type="button"
                     >
@@ -305,29 +312,29 @@ export function ProjectsView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((project) => (
-                    <tr key={project.id}>
+                  {filtered.map((projectItem) => (
+                    <tr key={projectItem.id}>
                       <td>
-                        <Link href={`/project?id=${project.id}`}>
-                          <strong>{project.acronym || project.title}</strong>
-                          <span>{project.code}</span>
+                        <Link href={`/project?id=${projectItem.id}`}>
+                          <strong>{projectItem.acronym || projectItem.title}</strong>
+                          <span>{projectItem.code}</span>
                         </Link>
                       </td>
-                      <td>{project.primary_area_short_name}</td>
-                      <td>{project.donor || "—"}</td>
-                      <td>{money(project.budget_total)}</td>
-                      <td>{percent(project.execution_pct)}</td>
-                      <td>{percent(project.physical_progress_pct)}</td>
-                      <td>{project.staff_count || 0}</td>
+                      <td>{projectItem.primary_area_short_name}</td>
+                      <td>{projectItem.donor || "—"}</td>
+                      <td>{money(projectItem.budget_total)}</td>
+                      <td>{percent(projectItem.execution_pct)}</td>
+                      <td>{percent(projectItem.physical_progress_pct)}</td>
+                      <td>{projectItem.staff_count || 0}</td>
                       <td>
-                        <span className={`status status--${project.status}`}>
-                          {statusLabel[project.status]}
+                        <span className={`status status--${projectItem.status}`}>
+                          {statusLabel[projectItem.status]}
                         </span>
                       </td>
                       <td>
                         <div className="table-admin-actions">
                           <button
-                            onClick={() => setEditTarget(project)}
+                            onClick={() => setEditTarget(projectItem)}
                             title="Editar"
                             type="button"
                           >
@@ -335,7 +342,7 @@ export function ProjectsView() {
                           </button>
                           <button
                             className="table-admin-delete"
-                            onClick={() => setDeleteTarget(project)}
+                            onClick={() => setDeleteTarget(projectItem)}
                             title="Retirar"
                             type="button"
                           >
