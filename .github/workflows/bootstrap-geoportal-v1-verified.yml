@@ -27,6 +27,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Repair generator route path
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          generator = Path("bootstrap-geoportal-v1.sh")
+          text = generator.read_text()
+          bad = "cat > \"$ROOT/app/projects/'[id]'/page.jsx\""
+          good = "mkdir -p \"$ROOT/app/projects/[id]\"\ncat > \"$ROOT/app/projects/[id]/page.jsx\""
+          if bad not in text:
+            raise SystemExit("Expected dynamic route generator line was not found")
+          generator.write_text(text.replace(bad, good, 1))
+          PY
+
       - name: Generate application source
         run: bash bootstrap-geoportal-v1.sh geoportal-mvp
 
