@@ -1,0 +1,24 @@
+1:"$Sreact.fragment"
+2:I[35943,["/FAO_Cartera_Proyectos/_next/static/chunks/3iyec4_0kabwb.js","/FAO_Cartera_Proyectos/_next/static/chunks/1lw13snf_t027.js","/FAO_Cartera_Proyectos/_next/static/chunks/2ybsuoasyivhn.js","/FAO_Cartera_Proyectos/_next/static/chunks/0rdw32s-4a-9r.js"],"Dashboard"]
+3:I[97367,["/FAO_Cartera_Proyectos/_next/static/chunks/3iyec4_0kabwb.js","/FAO_Cartera_Proyectos/_next/static/chunks/1lw13snf_t027.js","/FAO_Cartera_Proyectos/_next/static/chunks/2ybsuoasyivhn.js"],"OutletBoundary"]
+4:"$Sreact.suspense"
+8:I[97367,["/FAO_Cartera_Proyectos/_next/static/chunks/3iyec4_0kabwb.js","/FAO_Cartera_Proyectos/_next/static/chunks/1lw13snf_t027.js","/FAO_Cartera_Proyectos/_next/static/chunks/2ybsuoasyivhn.js"],"ViewportBoundary"]
+9:I[97367,["/FAO_Cartera_Proyectos/_next/static/chunks/3iyec4_0kabwb.js","/FAO_Cartera_Proyectos/_next/static/chunks/1lw13snf_t027.js","/FAO_Cartera_Proyectos/_next/static/chunks/2ybsuoasyivhn.js"],"MetadataBoundary"]
+b:I[39756,["/FAO_Cartera_Proyectos/_next/static/chunks/3iyec4_0kabwb.js","/FAO_Cartera_Proyectos/_next/static/chunks/1lw13snf_t027.js","/FAO_Cartera_Proyectos/_next/static/chunks/2ybsuoasyivhn.js"],"LoadingBoundaryProvider"]
+c:I[48794,["/FAO_Cartera_Proyectos/_next/static/chunks/3iyec4_0kabwb.js","/FAO_Cartera_Proyectos/_next/static/chunks/1lw13snf_t027.js","/FAO_Cartera_Proyectos/_next/static/chunks/2ybsuoasyivhn.js"],"AuthProvider"]
+d:I[48794,["/FAO_Cartera_Proyectos/_next/static/chunks/3iyec4_0kabwb.js","/FAO_Cartera_Proyectos/_next/static/chunks/1lw13snf_t027.js","/FAO_Cartera_Proyectos/_next/static/chunks/2ybsuoasyivhn.js"],"OperationalGate"]
+e:I[9437,["/FAO_Cartera_Proyectos/_next/static/chunks/3iyec4_0kabwb.js","/FAO_Cartera_Proyectos/_next/static/chunks/1lw13snf_t027.js","/FAO_Cartera_Proyectos/_next/static/chunks/2ybsuoasyivhn.js"],"AppShell"]
+f:I[39756,["/FAO_Cartera_Proyectos/_next/static/chunks/3iyec4_0kabwb.js","/FAO_Cartera_Proyectos/_next/static/chunks/1lw13snf_t027.js","/FAO_Cartera_Proyectos/_next/static/chunks/2ybsuoasyivhn.js"],"default"]
+10:I[37457,["/FAO_Cartera_Proyectos/_next/static/chunks/3iyec4_0kabwb.js","/FAO_Cartera_Proyectos/_next/static/chunks/1lw13snf_t027.js","/FAO_Cartera_Proyectos/_next/static/chunks/2ybsuoasyivhn.js"],"default"]
+11:I[22016,["/FAO_Cartera_Proyectos/_next/static/chunks/3iyec4_0kabwb.js","/FAO_Cartera_Proyectos/_next/static/chunks/1lw13snf_t027.js","/FAO_Cartera_Proyectos/_next/static/chunks/2ybsuoasyivhn.js"],""]
+:HL["/FAO_Cartera_Proyectos/_next/static/chunks/2o_6-ngirnryi.css","style"]
+7:X
+0:{"buildId":"PXb1n5HAK5lWlO3BxCgyx","data":[{"rsc":["$","$1","c",{"children":[["$","$L2",null,{}],[["$","script","script-0",{"src":"/FAO_Cartera_Proyectos/_next/static/chunks/0rdw32s-4a-9r.js","async":true}]],["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":"$@6","staleTime":"$7","varyParams":null},{"rsc":["$","$1","h",{"children":[null,["$","$L8",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L9",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Geoportal de Proyectos | FAO Honduras"}],["$","meta","1",{"name":"description","content":"Sistema protegido para inteligencia, monitoreo y visualización territorial de la cartera de proyectos de FAO Honduras."}]]}]}]}],null]}],"isPartial":"$@a","staleTime":"$7","varyParams":null},{"rsc":["$","$Lb",null,{"loading":[["$","div","l",{"className":"skeleton-panel","children":"Cargando inteligencia de cartera…"}],[],null],"children":["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/FAO_Cartera_Proyectos/_next/static/chunks/2o_6-ngirnryi.css","precedence":"next"}],["$","script","script-0",{"src":"/FAO_Cartera_Proyectos/_next/static/chunks/3iyec4_0kabwb.js","async":true}],["$","script","script-1",{"src":"/FAO_Cartera_Proyectos/_next/static/chunks/1lw13snf_t027.js","async":true}],["$","script","script-2",{"src":"/FAO_Cartera_Proyectos/_next/static/chunks/2ybsuoasyivhn.js","async":true}]],["$","html",null,{"lang":"es","children":["$","body",null,{"children":["$","$Lc",null,{"children":["$","$Ld",null,{"children":["$","$Le",null,{"children":["$","$Lf",null,{"parallelRouterKey":"children","template":["$","$L10",null,{}],"notFound":[["$","div",null,{"className":"empty-state","children":[["$","strong",null,{"children":"Contenido no encontrado"}],["$","p",null,{"children":"La ruta o el proyecto solicitado no está disponible."}],["$","$L11",null,{"className":"primary-button","href":"/projects","children":"Volver a la cartera"}]]}],[]]}]}]}]}]}]}]]}]}],"isPartial":"$@12","staleTime":"$7","varyParams":null}],"isUpgradeableISRFallback":false,"a":"$@13","rootVaryParams":null,"needsRuntimeRequest":"$@14"}
+5:null
+7:300
+14:true
+7:C
+13:0
+a:"$undefined"
+12:"$undefined"
+6:"$undefined"
