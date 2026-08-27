@@ -1,4 +1,4 @@
-name: Bootstrap and Verify Geoportal MVP
+name: Build, Publish and Deploy Geoportal MVP
 
 on:
   workflow_dispatch:
@@ -10,29 +10,131 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
-  group: bootstrap-geoportal-v1-verified
+  group: bootstrap-geoportal-v1
   cancel-in-progress: true
 
 jobs:
-  verify-and-publish:
+  build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Generate application tree
+      - name: Generate application source
         run: bash bootstrap-geoportal-v1.sh geoportal-mvp
+
+      - name: Adapt application for GitHub Pages and safe public demo
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path("geoportal-mvp")
+
+          (root / "next.config.mjs").write_text('''/** @type {import("next").NextConfig} */
+          const repositoryName = process.env.GITHUB_REPOSITORY?.split("/")[1] || "FAO_Cartera_Proyectos";
+          const isGitHubPages = process.env.GITHUB_PAGES === "true";
+          const basePath = isGitHubPages ? `/${repositoryName}` : "";
+
+          const nextConfig = {
+            reactStrictMode: true,
+            poweredByHeader: false,
+            output: "export",
+            trailingSlash: true,
+            basePath,
+            assetPrefix: basePath || undefined,
+            images: { unoptimized: true },
+          };
+
+          export default nextConfig;
+          ''')
+
+          # Replace dynamic project links with one static query-string route.
+          for path in list(root.rglob("*.js")) + list(root.rglob("*.jsx")):
+            text = path.read_text()
+            text = text.replace("`/projects/${", "`/project?id=${")
+            text = text.replace("'/projects/${", "'/project?id=${")
+            text = text.replace('"/projects/${', '"/project?id=${')
+            path.write_text(text)
+
+          project_component = root / "components" / "project-360.jsx"
+          text = project_component.read_text()
+          text = text.replace('import { useParams } from "next/navigation";\n', '')
+          text = text.replace('export function Project360() {\n  const { id } = useParams();', 'export function Project360({ id }) {')
+          project_component.write_text(text)
+
+          dynamic_route = root / "app" / "projects" / "[id]"
+          if dynamic_route.exists():
+            for child in dynamic_route.rglob("*"):
+              if child.is_file(): child.unlink()
+            for child in sorted(dynamic_route.rglob("*"), reverse=True):
+              if child.is_dir(): child.rmdir()
+            dynamic_route.rmdir()
+
+          static_route = root / "app" / "project"
+          static_route.mkdir(parents=True, exist_ok=True)
+          (static_route / "page.jsx").write_text('''"use client";
+
+          import { Suspense } from "react";
+          import Link from "next/link";
+          import { useSearchParams } from "next/navigation";
+          import { Project360 } from "@/components/project-360";
+
+          function ProjectQueryView() {
+            const searchParams = useSearchParams();
+            const id = searchParams.get("id");
+            if (!id) {
+              return <div className="empty-state"><strong>Proyecto no especificado</strong><p>Abra la ficha desde la cartera o el geoportal.</p><Link className="primary-button" href="/projects">Volver a la cartera</Link></div>;
+            }
+            return <Project360 id={id} />;
+          }
+
+          export default function ProjectPage() {
+            return <Suspense fallback={<div className="skeleton-panel">Cargando Ficha 360°…</div>}><ProjectQueryView /></Suspense>;
+          }
+          ''')
+
+          # Prefix the only plain public image with the GitHub Pages base path.
+          app_shell = root / "components" / "app-shell.jsx"
+          text = app_shell.read_text()
+          if "NEXT_PUBLIC_BASE_PATH" not in text:
+            text = text.replace("const nav = [", 'const publicBasePath = process.env.NEXT_PUBLIC_BASE_PATH || "";\n\nconst nav = [')
+          text = text.replace('src="/geoportal-mark.svg"', 'src={`${publicBasePath}/geoportal-mark.svg`}')
+          text = text.replace("Supabase conectado", "Supabase · lectura pública")
+          app_shell.write_text(text)
+
+          data_file = root / "lib" / "data.js"
+          text = data_file.read_text()
+          text = text.replace("if (!sb) {", 'if (!sb || process.env.NEXT_PUBLIC_DEPLOYMENT_MODE === "public-demo") {', 1)
+          text = text.replace("if (!sb || !files?.length) return [];", 'if (!sb || !files?.length || process.env.NEXT_PUBLIC_DEPLOYMENT_MODE === "public-demo") return [];')
+          text = text.replace("if (!sb) return true;", 'if (!sb || process.env.NEXT_PUBLIC_DEPLOYMENT_MODE === "public-demo") return true;')
+          data_file.write_text(text)
+
+          # Keep example variables generic; real public values are injected only by Actions.
+          env_example = root / ".env.example"
+          if env_example.exists():
+            env_example.write_text('''NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+          NEXT_PUBLIC_HONDURAS_ADM2_GEOJSON_URL=https://raw.githubusercontent.com/wmgeolab/geoBoundaries/main/releaseData/gbOpen/HND/ADM2/geoBoundaries-HND-ADM2_simplified.geojson
+          NEXT_PUBLIC_DEPLOYMENT_MODE=local
+          ''')
+
+          PY
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Install dependencies and create lockfile
+      - name: Install dependencies
         working-directory: geoportal-mvp
         run: npm install --no-audit --no-fund
 
@@ -40,16 +142,66 @@ jobs:
         working-directory: geoportal-mvp
         run: npm run lint
 
-      - name: Production build
+      - name: Build static GitHub Pages export
         working-directory: geoportal-mvp
         run: npm run build
+        env:
+          GITHUB_PAGES: "true"
+          NEXT_PUBLIC_BASE_PATH: /FAO_Cartera_Proyectos
+          NEXT_PUBLIC_SUPABASE_URL: https://xweafcknhbaxpnfeniiq.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_LorAzXKgzKiDX8JykiqKDw_ORqUYyDX
+          NEXT_PUBLIC_HONDURAS_ADM2_GEOJSON_URL: https://raw.githubusercontent.com/wmgeolab/geoBoundaries/main/releaseData/gbOpen/HND/ADM2/geoBoundaries-HND-ADM2_simplified.geojson
+          NEXT_PUBLIC_DEPLOYMENT_MODE: public-demo
 
-      - name: Publish verified sources
+      - name: Add nojekyll marker
+        run: touch geoportal-mvp/out/.nojekyll
+
+      - name: Consolidate verified source in main
         run: |
+          cp geoportal-mvp/README.md README.md
+          cat > START_HERE_GEOportal.md <<'EOF'
+          # FAO Honduras · Geoportal de Proyectos
+
+          La aplicación se encuentra en [`geoportal-mvp`](./geoportal-mvp).
+
+          URL esperada: `https://fabiocasco.github.io/FAO_Cartera_Proyectos/`
+
+          La publicación pública consulta Supabase en modo de solo lectura. Las pruebas de alta y actualización se guardan localmente en el navegador hasta incorporar acceso institucional protegido.
+          EOF
+          rm -rf bootstrap connector-test.txt DEVELOPMENT_STATUS.md
+          rm -f bootstrap-geoportal-v1.sh
+          rm -f .github/workflows/bootstrap.yml
+          rm -f .github/workflows/bootstrap-geoportal-v1.yml
+          rm -f .github/workflows/bootstrap-geoportal-v1-verified.yml
+          rm -f .github/workflows/geoportal-mvp-quality.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add geoportal-mvp START_HERE_GEOportal.md
+          git add -A
           if ! git diff --cached --quiet; then
-            git commit -m "feat: publish verified FAO Honduras geoportal MVP"
+            git commit -m "feat: publish GitHub Pages-ready FAO Honduras Geoportal"
             git push
           fi
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: geoportal-mvp/out
+
+  deploy:
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          static_site_generator: next
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
