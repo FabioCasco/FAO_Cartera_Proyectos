@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - geoportal-mvp/**
+      - .github/workflows/deploy-pages.yml
 
 permissions:
   contents: read
@@ -31,9 +32,27 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: geoportal-mvp/package-lock.json
+
+      - name: Validate Supabase public configuration
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || 'https://xweafcknhbaxpnfeniiq.supabase.co' }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "::error::NEXT_PUBLIC_SUPABASE_URL is missing."
+            exit 1
+          fi
+          if [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::error::Repository secret NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is missing."
+            exit 1
+          fi
+          echo "Supabase public configuration detected."
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Lint
         run: npm run lint
@@ -42,8 +61,9 @@ jobs:
         run: npm run build
         env:
           GITHUB_PAGES: "true"
-          NEXT_PUBLIC_SUPABASE_URL: https://xweafcknhbaxpnfeniiq.supabase.co
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_LorAzXKgzKiDX8JykiqKDw_ORqUYyDX
+          NEXT_PUBLIC_BASE_PATH: /FAO_Cartera_Proyectos
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || 'https://xweafcknhbaxpnfeniiq.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
           NEXT_PUBLIC_HONDURAS_ADM2_GEOJSON_URL: https://raw.githubusercontent.com/wmgeolab/geoBoundaries/main/releaseData/gbOpen/HND/ADM2/geoBoundaries-HND-ADM2_simplified.geojson
           NEXT_PUBLIC_DEPLOYMENT_MODE: public-demo
 
