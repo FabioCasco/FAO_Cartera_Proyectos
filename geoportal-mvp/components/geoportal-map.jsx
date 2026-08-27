@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import maplibregl from "maplibre-gl";
 import {
   ArrowUpRight,
   Layers3,
@@ -14,36 +13,76 @@ import {
 } from "lucide-react";
 import { getAreas, getLocations, getProjects } from "@/lib/data";
 
+const LEAFLET_JS =
+  "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js";
+const LEAFLET_CSS =
+  "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css";
 const HONDURAS_BOUNDS = [
-  [-89.4, 12.85],
-  [-82.95, 16.65],
+  [12.85, -89.4],
+  [16.65, -82.95],
 ];
+const MUNICIPAL_METADATA_URL =
+  "https://www.geoboundaries.org/api/current/gbOpen/HND/ADM2/";
 
-const rasterStyle = {
-  version: 8,
-  sources: {
-    "carto-dark": {
-      type: "raster",
-      tiles: [
-        "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
-        "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
-        "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
-      ],
-      tileSize: 256,
-      attribution:
-        "© OpenStreetMap contributors · © CARTO · límites geoBoundaries CC BY 4.0",
-    },
-  },
-  layers: [
-    {
-      id: "carto-dark",
-      type: "raster",
-      source: "carto-dark",
-      minzoom: 0,
-      maxzoom: 20,
-    },
-  ],
-};
+let leafletLoader = null;
+
+function loadLeaflet() {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("El mapa requiere un navegador."));
+  }
+  if (window.L?.map) return Promise.resolve(window.L);
+  if (leafletLoader) return leafletLoader;
+
+  leafletLoader = new Promise((resolve, reject) => {
+    if (!document.querySelector(`link[href="${LEAFLET_CSS}"]`)) {
+      const stylesheet = document.createElement("link");
+      stylesheet.rel = "stylesheet";
+      stylesheet.href = LEAFLET_CSS;
+      stylesheet.crossOrigin = "anonymous";
+      document.head.appendChild(stylesheet);
+    }
+
+    const finish = () => {
+      if (window.L?.map) {
+        resolve(window.L);
+      } else {
+        leafletLoader = null;
+        reject(new Error("Leaflet no quedó disponible después de cargar."));
+      }
+    };
+
+    const existing = document.querySelector(`script[src="${LEAFLET_JS}"]`);
+    if (existing) {
+      existing.addEventListener("load", finish, { once: true });
+      existing.addEventListener(
+        "error",
+        () => {
+          leafletLoader = null;
+          reject(new Error("No fue posible cargar el motor cartográfico."));
+        },
+        { once: true },
+      );
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = LEAFLET_JS;
+    script.async = true;
+    script.crossOrigin = "anonymous";
+    script.addEventListener("load", finish, { once: true });
+    script.addEventListener(
+      "error",
+      () => {
+        leafletLoader = null;
+        reject(new Error("No fue posible cargar el motor cartográfico."));
+      },
+      { once: true },
+    );
+    document.head.appendChild(script);
+  });
+
+  return leafletLoader;
+}
 
 function markerTone(projectCount) {
   if (projectCount >= 3) return "three";
@@ -58,22 +97,26 @@ function TerritorialFallback({ municipalities, onSelect }) {
   const maxLat = 16.65;
 
   return (
-    <div className="fallback-map" role="img" aria-label="Vista territorial de respaldo">
-      <svg viewBox="0 0 1000 600" preserveAspectRatio="none">
+    <div
+      aria-label="Vista territorial de respaldo"
+      className="fallback-map"
+      role="img"
+    >
+      <svg preserveAspectRatio="none" viewBox="0 0 1000 600">
         <defs>
           <radialGradient id="fallbackGlow" cx="50%" cy="45%" r="60%">
             <stop offset="0%" stopColor="#153240" stopOpacity="0.82" />
             <stop offset="100%" stopColor="#071016" stopOpacity="0" />
           </radialGradient>
         </defs>
-        <rect width="1000" height="600" fill="#081017" />
-        <rect width="1000" height="600" fill="url(#fallbackGlow)" />
+        <rect fill="#081017" height="600" width="1000" />
+        <rect fill="url(#fallbackGlow)" height="600" width="1000" />
         <path
           d="M118 332 L168 244 L276 192 L391 170 L472 130 L594 159 L676 211 L792 184 L895 247 L867 326 L779 356 L718 432 L596 411 L493 459 L379 426 L275 474 L181 418 Z"
           fill="#10212B"
+          opacity="0.9"
           stroke="#426274"
           strokeWidth="2"
-          opacity="0.9"
         />
         {municipalities.map((municipality) => {
           const x =
@@ -92,11 +135,12 @@ function TerritorialFallback({ municipalities, onSelect }) {
               tabIndex="0"
             >
               <circle cx={x} cy={y} r={18 + municipality.project_count * 3} />
-              <text x={x} y={y + 4} textAnchor="middle">
+              <text textAnchor="middle" x={x} y={y + 4}>
                 {municipality.project_count}
               </text>
               <title>
-                {municipality.municipality}: {municipality.project_count} proyecto(s)
+                {municipality.municipality}: {municipality.project_count}{" "}
+                proyecto(s)
               </title>
             </g>
           );
@@ -112,9 +156,9 @@ function TerritorialFallback({ municipalities, onSelect }) {
 export function GeoportalMap() {
   const node = useRef(null);
   const mapRef = useRef(null);
-  const markersRef = useRef([]);
-  const resizeObserverRef = useRef(null);
-  const mapLoadedRef = useRef(false);
+  const leafletRef = useRef(null);
+  const markerLayerRef = useRef(null);
+  const boundaryLayerRef = useRef(null);
 
   const [locations, setLocations] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -125,10 +169,9 @@ export function GeoportalMap() {
   const [query, setQuery] = useState("");
   const [loadingData, setLoadingData] = useState(true);
   const [dataError, setDataError] = useState("");
-  const [mapReady, setMapReady] = useState(false);
-  const [retryToken, setRetryToken] = useState(0);
   const [mapStatus, setMapStatus] = useState("loading");
-  const [mapMessage, setMapMessage] = useState("Inicializando mapa…");
+  const [mapMessage, setMapMessage] = useState("Inicializando mapa seguro…");
+  const [retryToken, setRetryToken] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -209,60 +252,46 @@ export function GeoportalMap() {
   }, [filtered]);
 
   useEffect(() => {
-    if (!node.current || mapRef.current) return;
+    let active = true;
+    let map = null;
 
-    if (!maplibregl.supported()) {
-      const fallbackTimer = window.setTimeout(() => {
-        setMapStatus("fallback");
-        setMapMessage(
-          "El navegador no habilitó WebGL. Se muestra una vista territorial de respaldo.",
+    loadLeaflet()
+      .then((L) => {
+        if (!active || !node.current) return;
+
+        leafletRef.current = L;
+        map = L.map(node.current, {
+          attributionControl: true,
+          preferCanvas: false,
+          zoomControl: true,
+          zoomSnap: 0.25,
+        });
+        mapRef.current = map;
+        map.fitBounds(HONDURAS_BOUNDS, { padding: [22, 22] });
+
+        const tiles = L.tileLayer(
+          "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+          {
+            attribution: "© OpenStreetMap contributors · © CARTO",
+            maxZoom: 19,
+            subdomains: "abcd",
+          },
         );
-      }, 0);
-      return () => window.clearTimeout(fallbackTimer);
-    }
+        tiles.addTo(map);
+        tiles.on("tileerror", () => {
+          if (active) {
+            setMapMessage(
+              "Los puntos están disponibles; algunas teselas del mapa base no respondieron.",
+            );
+          }
+        });
 
-    let map;
-    let timeout;
-
-    try {
-      map = new maplibregl.Map({
-        container: node.current,
-        style: rasterStyle,
-        center: [-86.6, 14.65],
-        zoom: 6.15,
-        minZoom: 5.3,
-        maxZoom: 15,
-        attributionControl: true,
-      });
-
-      mapRef.current = map;
-      map.addControl(
-        new maplibregl.NavigationControl({ showCompass: false }),
-        "top-right",
-      );
-
-      timeout = window.setTimeout(() => {
-        if (!mapLoadedRef.current) {
-          map.remove();
-          mapRef.current = null;
-          setMapReady(false);
-          setMapStatus("fallback");
-          setMapMessage(
-            "El mapa interactivo tardó demasiado en responder. Se activó la vista de respaldo.",
-          );
-        }
-      }, 12000);
-
-      map.on("load", () => {
-        mapLoadedRef.current = true;
-        window.clearTimeout(timeout);
-        setMapReady(true);
+        markerLayerRef.current = L.layerGroup().addTo(map);
         setMapStatus("ready");
         setMapMessage("Mapa interactivo disponible");
-        map.fitBounds(HONDURAS_BOUNDS, { padding: 34, duration: 0 });
-        window.setTimeout(() => map.resize(), 0);
+        window.setTimeout(() => map?.invalidateSize(), 0);
 
-        fetch("https://www.geoboundaries.org/api/current/gbOpen/HND/ADM2/")
+        fetch(MUNICIPAL_METADATA_URL)
           .then((response) => {
             if (!response.ok) throw new Error("Metadata municipal no disponible");
             return response.json();
@@ -273,123 +302,100 @@ export function GeoportalMap() {
             return response.json();
           })
           .then((geojson) => {
-            if (!mapRef.current || mapRef.current.getSource("municipios")) return;
-            mapRef.current.addSource("municipios", {
-              type: "geojson",
-              data: geojson,
-            });
-            mapRef.current.addLayer({
-              id: "municipios-fill",
-              type: "fill",
-              source: "municipios",
-              paint: {
-                "fill-color": "#14303E",
-                "fill-opacity": 0.12,
+            if (!active || !mapRef.current) return;
+            boundaryLayerRef.current?.remove();
+            boundaryLayerRef.current = L.geoJSON(geojson, {
+              interactive: false,
+              style: {
+                color: "rgba(178,211,226,.46)",
+                fillColor: "#14303E",
+                fillOpacity: 0.1,
+                weight: 0.65,
               },
-            });
-            mapRef.current.addLayer({
-              id: "municipios-line",
-              type: "line",
-              source: "municipios",
-              paint: {
-                "line-color": "rgba(178,211,226,.46)",
-                "line-width": 0.7,
-              },
-            });
+            }).addTo(mapRef.current);
+            boundaryLayerRef.current.bringToBack();
           })
           .catch(() => {
-            setMapMessage(
-              "Mapa y puntos disponibles; la capa municipal externa no respondió.",
-            );
+            if (active) {
+              setMapMessage(
+                "Mapa y puntos disponibles; la capa municipal externa no respondió.",
+              );
+            }
           });
-      });
-
-      map.on("error", (event) => {
-        const message = event?.error?.message || "Error cartográfico no especificado";
-        if (!mapLoadedRef.current) {
-          setMapMessage(`Cargando mapa: ${message}`);
-        }
-      });
-
-      if (typeof ResizeObserver !== "undefined") {
-        resizeObserverRef.current = new ResizeObserver(() => {
-          mapRef.current?.resize();
-        });
-        resizeObserverRef.current.observe(node.current);
-      }
-    } catch (error) {
-      const startupError =
-        error instanceof Error ? error.message : String(error);
-      window.setTimeout(() => {
+      })
+      .catch((error) => {
+        if (!active) return;
         setMapStatus("fallback");
         setMapMessage(
-          `No fue posible iniciar MapLibre: ${startupError}. Se muestra la vista de respaldo.`,
+          `${error.message || "No fue posible cargar el mapa"} Se muestra la vista territorial de respaldo.`,
         );
-      }, 0);
-    }
+      });
 
     return () => {
-      if (timeout) window.clearTimeout(timeout);
-      resizeObserverRef.current?.disconnect();
-      markersRef.current.forEach((marker) => marker.remove());
-      markersRef.current = [];
+      active = false;
+      boundaryLayerRef.current?.remove();
+      boundaryLayerRef.current = null;
+      markerLayerRef.current?.clearLayers();
+      markerLayerRef.current = null;
       if (mapRef.current === map) {
         map.remove();
         mapRef.current = null;
       }
-      mapLoadedRef.current = false;
     };
   }, [retryToken]);
 
   useEffect(() => {
-    markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current = [];
+    const L = leafletRef.current;
+    const layer = markerLayerRef.current;
+    if (!L || !layer || !mapRef.current || mapStatus !== "ready") return;
 
-    if (!mapReady || !mapRef.current) return;
-
+    layer.clearLayers();
     municipalities.forEach((municipality) => {
-      const element = document.createElement("button");
-      element.type = "button";
-      element.className = `geo-dom-marker geo-dom-marker--${markerTone(
-        municipality.project_count,
-      )}`;
-      element.textContent = String(municipality.project_count);
-      element.title = `${municipality.municipality}: ${municipality.project_count} proyecto(s)`;
-      element.setAttribute(
-        "aria-label",
-        `${municipality.municipality}, ${municipality.project_count} proyecto(s)`,
+      const tone = markerTone(municipality.project_count);
+      const size = 28 + Math.min(3, municipality.project_count) * 4;
+      const marker = L.marker(
+        [municipality.latitude, municipality.longitude],
+        {
+          icon: L.divIcon({
+            className: "leaflet-marker-shell",
+            html: `<span class="leaflet-project-marker leaflet-project-marker--${tone}">${municipality.project_count}</span>`,
+            iconAnchor: [size / 2, size / 2],
+            iconSize: [size, size],
+          }),
+          keyboard: true,
+          title: `${municipality.municipality}: ${municipality.project_count} proyecto(s)`,
+        },
       );
-      element.addEventListener("click", () => setSelected(municipality));
-
-      const marker = new maplibregl.Marker({ element, anchor: "center" })
-        .setLngLat([municipality.longitude, municipality.latitude])
-        .addTo(mapRef.current);
-
-      markersRef.current.push(marker);
+      marker.on("click", () => setSelected(municipality));
+      marker.bindTooltip(
+        `<strong>${municipality.municipality}</strong><br>${municipality.project_count} proyecto(s)`,
+        { direction: "top", offset: [0, -14] },
+      );
+      marker.addTo(layer);
     });
-  }, [mapReady, municipalities]);
+  }, [mapStatus, municipalities]);
 
   function focusMunicipality(municipality) {
     setSelected(municipality);
-    if (mapRef.current && mapReady) {
-      mapRef.current.flyTo({
-        center: [municipality.longitude, municipality.latitude],
-        zoom: 8.7,
-        essential: true,
-      });
+    if (mapRef.current && mapStatus === "ready") {
+      mapRef.current.flyTo(
+        [municipality.latitude, municipality.longitude],
+        9,
+        { duration: 0.8 },
+      );
     }
   }
 
   function retryMap() {
-    markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current = [];
-    resizeObserverRef.current?.disconnect();
+    boundaryLayerRef.current?.remove();
+    boundaryLayerRef.current = null;
+    markerLayerRef.current?.clearLayers();
+    markerLayerRef.current = null;
     mapRef.current?.remove();
     mapRef.current = null;
-    mapLoadedRef.current = false;
-    setMapReady(false);
+    leafletRef.current = null;
     setMapStatus("loading");
-    setMapMessage("Reiniciando mapa…");
+    setMapMessage("Reiniciando mapa seguro…");
     setRetryToken((value) => value + 1);
   }
 
@@ -422,9 +428,9 @@ export function GeoportalMap() {
           <label className="search-box">
             <Search size={16} />
             <input
-              value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Municipio o proyecto"
+              value={query}
             />
           </label>
           <label className="field">
@@ -441,8 +447,8 @@ export function GeoportalMap() {
           <label className="field">
             <span>Proyecto</span>
             <select
-              value={project}
               onChange={(event) => setProject(event.target.value)}
+              value={project}
             >
               <option value="all">Todos</option>
               {projects.map((item) => (
@@ -488,7 +494,9 @@ export function GeoportalMap() {
         </aside>
 
         <div className="map-stage">
-          {mapStatus !== "fallback" && <div ref={node} className="map-canvas" />}
+          {mapStatus !== "fallback" && (
+            <div className="map-canvas leaflet-map-canvas" ref={node} />
+          )}
           {mapStatus === "fallback" && (
             <TerritorialFallback
               municipalities={municipalities}
