@@ -1,25 +1,59 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ShieldAlert, Trash2, X } from "lucide-react";
 import { deleteProject } from "@/lib/data";
 
-export function DeleteProjectDialog({ project, onClose, onDeleted }) {
+export function DeleteProjectDialog({
+  project,
+  onClose,
+  onDeleted,
+  open = true,
+}) {
   const [confirmation, setConfirmation] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  const expected = (project.code || project.acronym || "").trim();
+  const expected = (project?.code || project?.acronym || "").trim();
   const normalizedConfirmation = confirmation.trim().toLowerCase();
-  const normalizedAcronym = (project.acronym || "").trim().toLowerCase();
+  const normalizedAcronym = (project?.acronym || "").trim().toLowerCase();
   const matches =
     normalizedConfirmation === expected.toLowerCase() ||
     (normalizedAcronym.length > 0 &&
       normalizedConfirmation === normalizedAcronym);
 
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape" && !busy) onClose?.();
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [busy, onClose, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    setConfirmation("");
+    setError("");
+  }, [open, project?.id]);
+
+  if (!open || !project) return null;
+
   function close() {
     if (busy) return;
-    onClose();
+    onClose?.();
+  }
+
+  function handleBackdropClick(event) {
+    if (event.target === event.currentTarget) close();
   }
 
   async function submit(event) {
@@ -31,7 +65,7 @@ export function DeleteProjectDialog({ project, onClose, onDeleted }) {
     try {
       await deleteProject(project.id, confirmation.trim());
       await onDeleted?.(project.id);
-      onClose();
+      onClose?.();
     } catch (deleteError) {
       setError(
         deleteError.message || "No fue posible retirar el proyecto de la cartera.",
@@ -42,16 +76,22 @@ export function DeleteProjectDialog({ project, onClose, onDeleted }) {
   }
 
   return (
-    <div className="modal-backdrop delete-dialog-backdrop" role="presentation">
+    <div
+      className="modal-backdrop delete-dialog-backdrop"
+      onMouseDown={handleBackdropClick}
+      role="presentation"
+    >
       <section
         aria-labelledby="delete-project-title"
         aria-modal="true"
         className="delete-dialog"
+        onMouseDown={(event) => event.stopPropagation()}
         role="dialog"
       >
         <button
           aria-label="Cerrar"
           className="delete-dialog-close"
+          disabled={busy}
           onClick={close}
           type="button"
         >
@@ -83,6 +123,7 @@ export function DeleteProjectDialog({ project, onClose, onDeleted }) {
             </span>
             <input
               autoComplete="off"
+              autoFocus
               onChange={(event) => setConfirmation(event.target.value)}
               placeholder={expected}
               value={confirmation}
