@@ -7,7 +7,6 @@ import {
   BarChart3,
   Building2,
   BriefcaseBusiness,
-  ChevronDown,
   CircleDot,
   Layers3,
   Map as MapIcon,
@@ -23,6 +22,7 @@ import {
   loadHondurasBoundaries,
 } from "@/lib/geoportal-data";
 import { money, percent, statusLabel } from "@/lib/format";
+import { usePersistentState } from "@/lib/persistent-state";
 
 const LEAFLET_JS = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js";
 const LEAFLET_CSS = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css";
@@ -474,6 +474,7 @@ export function GeoportalMap() {
   const mapRef = useRef(null);
   const leafletRef = useRef(null);
   const baseLayersRef = useRef(null);
+  const activeBaseLayerRef = useRef(null);
   const overlayLayersRef = useRef({});
   const layerControlRef = useRef(null);
 
@@ -484,12 +485,45 @@ export function GeoportalMap() {
     municipalities: [],
   });
   const [boundaries, setBoundaries] = useState(null);
-  const [area, setArea] = useState("all");
-  const [project, setProject] = useState("all");
-  const [query, setQuery] = useState("");
-  const [analysisMode, setAnalysisMode] = useState("municipalities");
-  const [summaryTab, setSummaryTab] = useState("areas");
-  const [selected, setSelected] = useState(null);
+  const [area, setArea] = usePersistentState(
+  "fao-hn-geohub:geoportal:v3:area",
+  "all",
+);
+const [project, setProject] = usePersistentState(
+  "fao-hn-geohub:geoportal:v3:project",
+  "all",
+);
+const [query, setQuery] = usePersistentState(
+  "fao-hn-geohub:geoportal:v3:query",
+  "",
+);
+const [analysisMode, setAnalysisMode] = usePersistentState(
+  "fao-hn-geohub:geoportal:v3:analysis-mode",
+  "municipalities",
+);
+const [summaryTab, setSummaryTab] = usePersistentState(
+  "fao-hn-geohub:geoportal:v3:summary-tab",
+  "areas",
+);
+const [basemap, setBasemap] = usePersistentState(
+  "fao-hn-geohub:geoportal:v3:basemap",
+  "Oscuro · Esri",
+);
+const [mapView, setMapView] = usePersistentState(
+  "fao-hn-geohub:geoportal:v3:map-view",
+  null,
+);
+const [selected, setSelected] = useState(null);
+const mapViewRef = useRef(mapView);
+const basemapRef = useRef(basemap);
+
+useEffect(() => {
+  mapViewRef.current = mapView;
+}, [mapView]);
+
+useEffect(() => {
+  basemapRef.current = basemap;
+}, [basemap]);
   const [loadingData, setLoadingData] = useState(true);
   const [dataError, setDataError] = useState("");
   const [boundaryError, setBoundaryError] = useState("");
@@ -607,7 +641,20 @@ export function GeoportalMap() {
           zoomSnap: 0.25,
         });
         mapRef.current = map;
+      const savedView = mapViewRef.current;
+      if (
+        savedView &&
+        Number.isFinite(Number(savedView.latitude)) &&
+        Number.isFinite(Number(savedView.longitude)) &&
+        Number.isFinite(Number(savedView.zoom))
+      ) {
+        map.setView(
+          [Number(savedView.latitude), Number(savedView.longitude)],
+          Number(savedView.zoom),
+        );
+      } else {
         map.fitBounds(HONDURAS_BOUNDS, { padding: [22, 22] });
+      }
 
         const darkTiles = L.tileLayer(
           "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
@@ -668,13 +715,33 @@ export function GeoportalMap() {
           fallbackActivated = true;
           mapRef.current.removeLayer(dark);
           streets.addTo(mapRef.current);
+          activeBaseLayerRef.current = streets;
+          setBasemap("Calles · OpenStreetMap");
           setMapMessage(
             "El mapa oscuro no respondió; se activó OpenStreetMap. Los límites y análisis continúan disponibles.",
           );
         });
 
-        dark.addTo(map);
-        L.control.scale({ imperial: false, position: "bottomleft" }).addTo(map);
+        const initialBaseLayer =
+        baseLayersRef.current[basemapRef.current] || dark;
+      initialBaseLayer.addTo(map);
+      activeBaseLayerRef.current = initialBaseLayer;
+
+      map.on("baselayerchange", (event) => {
+        activeBaseLayerRef.current = event.layer;
+        if (event.name) setBasemap(event.name);
+      });
+
+      map.on("moveend", () => {
+        const center = map.getCenter();
+        setMapView({
+          latitude: Number(center.lat.toFixed(6)),
+          longitude: Number(center.lng.toFixed(6)),
+          zoom: Number(map.getZoom().toFixed(2)),
+        });
+      });
+
+      L.control.scale({ imperial: false, position: "bottomleft" }).addTo(map);
         setMapStatus("ready");
         setMapReady(true);
         setMapMessage("Mapas base sin clave y cartografía administrativa local disponibles");
@@ -702,9 +769,25 @@ export function GeoportalMap() {
         mapRef.current = null;
       }
       leafletRef.current = null;
-      baseLayersRef.current = null;
-    };
-  }, [retryToken]);
+    baseLayersRef.current = null;
+    activeBaseLayerRef.current = null;
+  };
+}, [retryToken]);
+
+useEffect(() => {
+  const map = mapRef.current;
+  const baseLayers = baseLayersRef.current;
+  if (!map || !mapReady || !baseLayers) return;
+
+  const target = baseLayers[basemap] || baseLayers["Oscuro · Esri"];
+  if (!target || activeBaseLayerRef.current === target) return;
+
+  for (const layer of Object.values(baseLayers)) {
+    if (map.hasLayer(layer)) map.removeLayer(layer);
+  }
+  target.addTo(map);
+  activeBaseLayerRef.current = target;
+}, [basemap, mapReady]);
 
   useEffect(() => {
     const L = leafletRef.current;
@@ -996,9 +1079,39 @@ export function GeoportalMap() {
                 ))}
               </select>
             </label>
-          </div>
+          <label className="field geo-basemap-field">
+          <span>Mapa base</span>
+          <select
+            onChange={(event) => setBasemap(event.target.value)}
+            value={basemap}
+          >
+            <option value="Oscuro · Esri">Oscuro · predeterminado</option>
+            <option value="Calles · OpenStreetMap">Calles · OpenStreetMap</option>
+            <option value="Topográfico · Esri">Topográfico · Esri</option>
+            <option value="Satélite · Esri">Satélite · Esri</option>
+          </select>
+        </label>
+        <button
+          className="geo-reset-filters"
+          onClick={() => {
+            setArea("all");
+            setProject("all");
+            setQuery("");
+            setAnalysisMode("municipalities");
+            setSummaryTab("areas");
+            setBasemap("Oscuro · Esri");
+            setSelected(null);
+            mapRef.current?.fitBounds(HONDURAS_BOUNDS, {
+              padding: [22, 22],
+            });
+          }}
+          type="button"
+        >
+          Restablecer filtros y mapa
+        </button>
+      </div>
 
-          <div className="geo-analysis-mode">
+      <div className="geo-analysis-mode">
             <span>Representación espacial</span>
             <div>
               <button
@@ -1129,11 +1242,7 @@ export function GeoportalMap() {
             )}
           </div>
 
-          <div className="map-layer-hint">
-            <Layers3 size={14} />
-            <span>Use el control de capas para cambiar mapa base y superposiciones.</span>
-            <ChevronDown size={13} />
-          </div>
+
 
           <div className="map-note">
             Límites administrativos: geoBoundaries. Los montos mostrados en las
