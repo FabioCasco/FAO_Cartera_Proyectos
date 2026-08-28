@@ -1,0 +1,507 @@
+/* FAO-HN GeoHub · project intake and modal usability refinements v0.6 */
+
+/* Clickable, legible project-intake steps. */
+.stepper-v2 {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(138px, 1fr));
+  gap: 0;
+  overflow-x: auto;
+  padding: 12px 14px;
+  scrollbar-width: thin;
+}
+
+.stepper-v2 li {
+  position: relative;
+  min-width: 138px;
+  list-style: none;
+}
+
+.stepper-v2 li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 29px;
+  left: calc(50% + 28px);
+  right: calc(-50% + 28px);
+  height: 1px;
+  background: #253744;
+  pointer-events: none;
+}
+
+.stepper-v2 li.done:not(:last-child)::after {
+  background: linear-gradient(90deg, rgba(105, 207, 216, 0.75), #31505b);
+}
+
+.stepper-v2 li button,
+.stepper-v2 li.done button {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: #7f929f;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.stepper-v2 li button:hover {
+  border-color: rgba(105, 207, 216, 0.16);
+  background: rgba(105, 207, 216, 0.035);
+  color: #b7c7d0;
+}
+
+.stepper-v2 li button > span {
+  width: 29px;
+  height: 29px;
+  flex: 0 0 29px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #314552;
+  border-radius: 50%;
+  background: #091219;
+  color: #7f929e;
+  font-size: 10px;
+  font-weight: 750;
+  box-shadow: 0 0 0 5px #0a1117;
+}
+
+.stepper-v2 li small {
+  color: inherit;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.stepper-v2 li.done button {
+  color: #a8bec7;
+}
+
+.stepper-v2 li.done button > span {
+  border-color: rgba(105, 207, 216, 0.5);
+  background: rgba(105, 207, 216, 0.14);
+  color: #8de0e6;
+}
+
+.stepper-v2 li.active button {
+  border-color: rgba(105, 207, 216, 0.34);
+  background: linear-gradient(135deg, rgba(105, 207, 216, 0.12), rgba(10, 18, 24, 0.68));
+  color: #eef8f9;
+  box-shadow: inset 0 0 0 1px rgba(105, 207, 216, 0.045);
+}
+
+.stepper-v2 li.active button > span {
+  border-color: #8ce1e7;
+  background: #69cfd8;
+  color: #071116;
+  box-shadow: 0 0 0 5px rgba(105, 207, 216, 0.11), 0 0 22px rgba(105, 207, 216, 0.22);
+}
+
+/* Compact and structured territorial intake. */
+.territory-compact-editor {
+  display: grid;
+  gap: 15px;
+}
+
+.territory-compact-intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 15px;
+  border: 1px solid rgba(105, 207, 216, 0.18);
+  border-radius: 13px;
+  background: linear-gradient(135deg, rgba(105, 207, 216, 0.065), rgba(9, 16, 22, 0.76));
+}
+
+.territory-compact-intro > svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--cyan);
+}
+
+.territory-compact-intro strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.territory-compact-intro p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.territory-compact-list {
+  display: grid;
+  gap: 13px;
+}
+
+.territory-compact-card {
+  overflow: hidden;
+  border: 1px solid #263945;
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(13, 21, 29, 0.96), rgba(7, 13, 18, 0.94));
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.territory-compact-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.065);
+  background: rgba(255, 255, 255, 0.012);
+}
+
+.territory-compact-card__identity {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.territory-compact-card__number,
+.territory-compact-card__icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid #2c414e;
+  background: #091219;
+}
+
+.territory-compact-card__number {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  color: #77d4dc;
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.territory-compact-card__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: var(--cyan);
+}
+
+.territory-compact-card__identity > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.territory-compact-card__identity strong {
+  font-size: 12px;
+}
+
+.territory-compact-card__identity small {
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.territory-compact-card__delete {
+  width: 33px;
+  height: 33px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(231, 124, 124, 0.22);
+  border-radius: 9px;
+  background: rgba(231, 124, 124, 0.055);
+  color: #e88e8e;
+  cursor: pointer;
+}
+
+.territory-compact-card__delete:hover {
+  border-color: rgba(231, 124, 124, 0.48);
+  background: rgba(231, 124, 124, 0.11);
+}
+
+.territory-compact-scope {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  padding: 12px 15px 0;
+}
+
+.territory-compact-scope button {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #293c48;
+  border-radius: 10px;
+  background: #0a131a;
+  color: #8fa1ac;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.territory-compact-scope button:hover {
+  border-color: rgba(105, 207, 216, 0.3);
+  color: #bdd7dc;
+}
+
+.territory-compact-scope button.active {
+  border-color: rgba(105, 207, 216, 0.48);
+  background: rgba(105, 207, 216, 0.105);
+  color: #d9f2f4;
+  box-shadow: inset 0 0 0 1px rgba(105, 207, 216, 0.045);
+}
+
+.territory-compact-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 11px;
+  padding: 13px 15px;
+}
+
+.territory-compact-fields .field,
+.territory-point-compact__fields .field {
+  min-width: 0;
+}
+
+.territory-compact-other {
+  margin: 0 15px 13px;
+}
+
+.territory-vector-confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 15px 13px;
+  padding: 11px 12px;
+  border: 1px solid rgba(114, 214, 201, 0.17);
+  border-radius: 11px;
+  background: rgba(114, 214, 201, 0.045);
+}
+
+.territory-vector-confirmation > svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--green);
+}
+
+.territory-vector-confirmation > div {
+  display: grid;
+  gap: 3px;
+}
+
+.territory-vector-confirmation strong {
+  font-size: 10px;
+}
+
+.territory-vector-confirmation span {
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.territory-point-compact {
+  display: grid;
+  gap: 11px;
+  margin: 0 15px 13px;
+  padding: 12px;
+  border: 1px solid #263945;
+  border-radius: 12px;
+  background: rgba(7, 13, 18, 0.62);
+}
+
+.territory-point-compact__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.territory-point-compact__summary > div {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.territory-point-compact__summary svg {
+  color: var(--cyan);
+}
+
+.territory-point-compact__summary span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.territory-point-compact__summary strong {
+  font-size: 10px;
+}
+
+.territory-point-compact__summary small {
+  color: #91a6b1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 8px;
+}
+
+.territory-point-compact__summary button {
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid rgba(105, 207, 216, 0.28);
+  border-radius: 9px;
+  background: rgba(105, 207, 216, 0.075);
+  color: #bce6e9;
+  cursor: pointer;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.territory-point-compact__fields {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.6fr) repeat(2, minmax(125px, 0.7fr));
+  gap: 10px;
+}
+
+.territory-point-compact__map {
+  overflow: hidden;
+  border: 1px solid #2b3e4a;
+  border-radius: 12px;
+}
+
+.location-picker-shell--compact,
+.location-picker--compact {
+  min-height: 270px !important;
+  height: 270px !important;
+}
+
+.location-picker-shell--compact {
+  position: relative;
+}
+
+.location-picker--compact {
+  border-radius: 0 !important;
+}
+
+.territory-compact-details {
+  margin: 0 15px 14px;
+  border: 1px solid #243641;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.012);
+}
+
+.territory-compact-details summary {
+  min-height: 39px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px;
+  color: #9fb0ba;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 650;
+  list-style: none;
+}
+
+.territory-compact-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.territory-compact-details summary svg:last-child {
+  margin-left: auto;
+  transition: transform 0.18s ease;
+}
+
+.territory-compact-details[open] summary svg:last-child {
+  transform: rotate(180deg);
+}
+
+.territory-compact-details .field {
+  padding: 0 11px 11px;
+}
+
+.territory-compact-details textarea {
+  min-height: 74px;
+}
+
+.territory-compact-add {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Protected dialog must always be dismissible. */
+.modal-backdrop {
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+.delete-dialog {
+  pointer-events: auto;
+}
+
+.delete-dialog-close:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1120px) {
+  .territory-compact-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .territory-compact-intervention {
+    grid-column: 1 / -1;
+  }
+
+  .territory-point-compact__fields {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .territory-point-name {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .stepper-v2 {
+    grid-template-columns: repeat(5, minmax(126px, 1fr));
+  }
+
+  .territory-compact-card__header,
+  .territory-point-compact__summary {
+    align-items: flex-start;
+  }
+
+  .territory-compact-scope,
+  .territory-compact-fields,
+  .territory-point-compact__fields {
+    grid-template-columns: 1fr;
+  }
+
+  .territory-compact-intervention,
+  .territory-point-name {
+    grid-column: auto;
+  }
+
+  .territory-point-compact__summary {
+    flex-direction: column;
+  }
+
+  .territory-point-compact__summary button {
+    width: 100%;
+  }
+
+  .location-picker-shell--compact,
+  .location-picker--compact {
+    min-height: 235px !important;
+    height: 235px !important;
+  }
+}
