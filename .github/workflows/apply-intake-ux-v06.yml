@@ -34,9 +34,10 @@ jobs:
 
           old_import = 'import { TerritoryEditor, createEmptyLocation } from "./territory-editor";'
           new_import = 'import { TerritoryEditor, createEmptyLocation } from "./territory-editor-compact";'
-          if old_import not in text and new_import not in text:
+          if old_import in text:
+              text = text.replace(old_import, new_import, 1)
+          elif new_import not in text:
               raise SystemExit("Territory editor import not found")
-          text = text.replace(old_import, new_import, 1)
 
           old_click = 'onClick={() => index <= step && setStep(index)}'
           new_click = 'onClick={() => setStep(index)}'
@@ -44,23 +45,6 @@ jobs:
               text = text.replace(old_click, new_click, 1)
           elif new_click not in text:
               raise SystemExit("Stepper click handler not found")
-
-          old_button = '''              <button
-                aria-current={index === step ? "step" : undefined}
-                onClick={() => setStep(index)}
-                type="button"
-              >'''
-          new_button = '''              <button
-                aria-current={index === step ? "step" : undefined}
-                aria-label={`Ir a ${item.title}`}
-                onClick={() => setStep(index)}
-                title={item.description}
-                type="button"
-              >'''
-          if old_button in text:
-              text = text.replace(old_button, new_button, 1)
-          elif 'aria-label={`Ir a ${item.title}`}' not in text:
-              raise SystemExit("Stepper button block not found")
 
           path.write_text(text)
           PY
