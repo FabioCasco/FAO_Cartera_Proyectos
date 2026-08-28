@@ -21,7 +21,7 @@ import {
 import { useAuth } from "@/components/auth-provider";
 import { createProjectBundle, getAreas, uploadProjectAssets } from "@/lib/data";
 import { usePersistentState } from "@/lib/persistent-state";
-import { TerritoryEditor, createEmptyLocation } from "./territory-editor";
+import { TerritoryEditor, createEmptyLocation } from "./territory-editor-compact";
 
 const DRAFT_VERSION = 3;
 
@@ -524,7 +524,7 @@ export function ProjectForm() {
             >
               <button
                 aria-current={index === step ? "step" : undefined}
-                onClick={() => index <= step && setStep(index)}
+                onClick={() => setStep(index)}
                 type="button"
               >
                 <span>{index < step ? <Check size={14} /> : index + 1}</span>
