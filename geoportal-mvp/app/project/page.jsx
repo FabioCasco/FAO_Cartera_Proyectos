@@ -4,7 +4,6 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Project360 } from "@/components/project-360";
-import { ProjectManagementActions } from "@/components/project-management-actions";
 
 function ProjectQueryView() {
   const searchParams = useSearchParams();
@@ -22,12 +21,7 @@ function ProjectQueryView() {
     );
   }
 
-  return (
-    <div className="page-stack">
-      <ProjectManagementActions id={id} />
-      <Project360 id={id} />
-    </div>
-  );
+  return <Project360 id={id} key={id} />;
 }
 
 export default function ProjectPage() {
