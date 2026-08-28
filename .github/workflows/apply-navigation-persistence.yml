@@ -1,3 +1,4 @@
+# One-time installer; removes itself after a successful verified commit.
 name: Apply Navigation Persistence
 
 on:
