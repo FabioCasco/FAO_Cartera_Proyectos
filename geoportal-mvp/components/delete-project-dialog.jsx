@@ -29,7 +29,11 @@ export function DeleteProjectDialog({
     document.body.style.overflow = "hidden";
 
     function handleKeyDown(event) {
-      if (event.key === "Escape" && !busy) onClose?.();
+      if (event.key === "Escape" && !busy) {
+        setConfirmation("");
+        setError("");
+        onClose?.();
+      }
     }
 
     window.addEventListener("keydown", handleKeyDown);
@@ -39,16 +43,12 @@ export function DeleteProjectDialog({
     };
   }, [busy, onClose, open]);
 
-  useEffect(() => {
-    if (!open) return;
-    setConfirmation("");
-    setError("");
-  }, [open, project?.id]);
-
   if (!open || !project) return null;
 
   function close() {
     if (busy) return;
+    setConfirmation("");
+    setError("");
     onClose?.();
   }
 
@@ -65,6 +65,7 @@ export function DeleteProjectDialog({
     try {
       await deleteProject(project.id, confirmation.trim());
       await onDeleted?.(project.id);
+      setConfirmation("");
       onClose?.();
     } catch (deleteError) {
       setError(
