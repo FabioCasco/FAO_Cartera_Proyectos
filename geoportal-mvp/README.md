@@ -1,4 +1,4 @@
-# Geoportal de Proyectos FAO Honduras · Piloto operativo 0.5
+# Geoportal de Proyectos FAO Honduras · Piloto operativo 0.6
 
 Aplicación protegida para organizar, visualizar y monitorear la cartera de proyectos de FAO Honduras.
 
@@ -10,11 +10,15 @@ Aplicación protegida para organizar, visualizar y monitorear la cartera de proy
 - Alta transaccional de proyectos.
 - Borrador local automático del formulario de registro.
 - Persistencia de pasos, filtros, tipo de vista, mapa base y posición del visor.
+- Navegación directa entre todos los pasos del registro con estado activo visible.
+- Captura territorial compacta mediante departamentos, municipios y puntos específicos.
+- Selector cartográfico ligero, cargado únicamente cuando se necesita una coordenada.
 - Cortes técnicos y financieros históricos.
 - Resultados, componentes, indicadores y RRHH priorizados para monitoreo de cartera.
 - Geoportal con límites administrativos, convergencias territoriales y coberturas vectoriales.
 - Evidencias en Supabase Storage privado.
 - Edición y eliminación lógica auditable de proyectos.
+- Diálogos protegidos que pueden cerrarse mediante X, Cancelar, Escape o clic fuera del panel.
 
 ## Persistencia de la experiencia
 
