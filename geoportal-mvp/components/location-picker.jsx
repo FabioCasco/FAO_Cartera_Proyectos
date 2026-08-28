@@ -65,12 +65,11 @@ export function LocationPicker({ value, onChange }) {
   const node = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
-  const layerControlRef = useRef(null);
   const resizeObserverRef = useRef(null);
   const onChangeRef = useRef(onChange);
   const valueRef = useRef(value);
   const [status, setStatus] = useState("loading");
-  const [message, setMessage] = useState("Inicializando selector…");
+  const [message, setMessage] = useState("Preparando mapa ligero…");
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -102,51 +101,15 @@ export function LocationPicker({ value, onChange }) {
         mapRef.current = map;
         map.setView(
           hasPosition ? [latitude, longitude] : [14.65, -86.6],
-          hasPosition ? 9.5 : 6.25,
+          hasPosition ? 11 : 6.4,
         );
 
-        const topographic = L.tileLayer(
-          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
-          { attribution: "Tiles © Esri", maxZoom: 18 },
-        );
-        const streets = L.tileLayer(
-          "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-          {
-            attribution: "© OpenStreetMap contributors",
-            maxZoom: 19,
-            subdomains: "abc",
-          },
-        );
-        const imagery = L.tileLayer(
-          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-          { attribution: "Imagery © Esri", maxZoom: 18 },
-        );
-        const dark = L.tileLayer(
-          "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-          { attribution: "Tiles © Esri", maxZoom: 16 },
-        );
-
-        topographic.addTo(map);
-        layerControlRef.current = L.control.layers(
-          {
-            "Topográfico · predeterminado": topographic,
-            "Calles · OpenStreetMap": streets,
-            "Satélite · Esri": imagery,
-            "Oscuro · Esri": dark,
-          },
-          null,
-          { collapsed: true, position: "topright" },
-        );
-        layerControlRef.current.addTo(map);
-
-        topographic.on("tileerror", () => {
-          if (!active || !mapRef.current || mapRef.current.hasLayer(streets)) {
-            return;
-          }
-          mapRef.current.removeLayer(topographic);
-          streets.addTo(mapRef.current);
-          setMessage("Se activó OpenStreetMap como respaldo.");
-        });
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "© OpenStreetMap contributors",
+          maxZoom: 19,
+          subdomains: "abc",
+          updateWhenIdle: true,
+        }).addTo(map);
 
         map.on("click", (event) => {
           onChangeRef.current?.({
@@ -157,13 +120,15 @@ export function LocationPicker({ value, onChange }) {
 
         if (typeof ResizeObserver !== "undefined") {
           resizeObserverRef.current = new ResizeObserver(() => {
-            mapRef.current?.invalidateSize({ pan: false });
+            window.requestAnimationFrame(() =>
+              mapRef.current?.invalidateSize({ pan: false }),
+            );
           });
           resizeObserverRef.current.observe(node.current);
         }
 
         setStatus("ready");
-        setMessage("Haga clic en el mapa para ubicar el punto.");
+        setMessage("Haga clic para fijar o cambiar la coordenada.");
         window.setTimeout(() => map.invalidateSize({ pan: false }), 0);
       })
       .catch((error) => {
@@ -176,8 +141,6 @@ export function LocationPicker({ value, onChange }) {
       active = false;
       resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = null;
-      layerControlRef.current?.remove();
-      layerControlRef.current = null;
       markerRef.current?.remove();
       markerRef.current = null;
       if (mapRef.current === map) {
@@ -200,17 +163,22 @@ export function LocationPicker({ value, onChange }) {
     }
 
     if (!markerRef.current) {
-      markerRef.current = L.marker([latitude, longitude], {
-        title: "Ubicación de la intervención",
+      markerRef.current = L.circleMarker([latitude, longitude], {
+        radius: 8,
+        color: "#edf7f8",
+        fillColor: "#69cfd8",
+        fillOpacity: 1,
+        weight: 2,
       }).addTo(map);
     } else {
       markerRef.current.setLatLng([latitude, longitude]);
     }
+    map.panTo([latitude, longitude], { animate: true, duration: 0.3 });
   }, [value?.latitude, value?.longitude]);
 
   return (
-    <div className="location-picker-shell">
-      <div className="location-picker" ref={node} />
+    <div className="location-picker-shell location-picker-shell--compact">
+      <div className="location-picker location-picker--compact" ref={node} />
       <div className={`location-picker-status location-picker-status--${status}`}>
         {status === "loading" && <RefreshCw className="spin" size={13} />}
         {status === "error" && <TriangleAlert size={13} />}
